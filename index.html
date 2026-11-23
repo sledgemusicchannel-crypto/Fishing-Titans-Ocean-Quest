@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Retro & Arcade Google Fonts -->
+    <!-- Retro Arcade Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * {
@@ -56,13 +56,6 @@
         .animate-mario-bounce {
             animation: marioPulse 1.8s infinite ease-in-out;
         }
-        @keyframes floatCrate {
-            0%, 100% { transform: translateY(0px) rotate(-2deg); }
-            50% { transform: translateY(-6px) rotate(2deg); }
-        }
-        .animate-crate {
-            animation: floatCrate 2.2s ease-in-out infinite;
-        }
     </style>
 </head>
 <body class="flex justify-center items-center h-screen w-screen overflow-hidden text-white bg-slate-950">
@@ -70,13 +63,13 @@
     <!-- Main Game Container -->
     <div id="game-container" class="relative w-full h-full max-w-md md:max-w-2xl lg:max-w-4xl mx-auto flex flex-col shadow-2xl overflow-hidden bg-sky-950">
         
-        <!-- Game Canvas (Rendered with 5D Parallax, Waves & Shaders) -->
+        <!-- Game Canvas (Rendered with 5D Parallax, Waves & Dynamic Diver Mode) -->
         <canvas id="gameCanvas" class="absolute inset-0 z-0"></canvas>
 
-        <!-- TOP HUD BAR (Pinned to Top Edge - Zero Overlap with Fisherman Face) -->
+        <!-- TOP HUD BAR (Pinned to Top Edge - Zero Overlap with Angler Face) -->
         <div id="hud" class="absolute top-0 left-0 w-full z-10 pt-2 px-3 pb-1 flex flex-col gap-1.5 pointer-events-none hidden">
             <div class="flex justify-between items-center bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-sky-500/40 shadow-xl pointer-events-auto">
-                <!-- Level Badge -->
+                <!-- Level Badge & Biome -->
                 <div class="flex items-center gap-1.5">
                     <span id="hud-level-badge" class="bg-amber-400 text-slate-950 font-retro text-[10px] md:text-xs px-2.5 py-1 rounded-lg font-bold shadow">LVL 1</span>
                     <span id="hud-biome-name" class="text-xs text-sky-200 font-bold hidden sm:inline">Coral Cove</span>
@@ -88,14 +81,13 @@
                     <div class="text-base md:text-xl font-retro font-extrabold text-white glow-cyan"><span id="hud-level-points">0</span></div>
                 </div>
 
-                <!-- Timer & Coins -->
+                <!-- Timer & Sound Controls -->
                 <div class="flex items-center gap-2">
                     <div class="bg-rose-950/90 border border-rose-500/50 px-2 py-0.5 rounded-lg flex items-center gap-1">
                         <i class="fa-solid fa-stopwatch text-rose-400 text-xs animate-pulse"></i>
                         <span id="hud-timer" class="font-retro text-xs md:text-sm text-rose-300">60s</span>
                     </div>
 
-                    <!-- BGM & Sound Controls -->
                     <button id="btn-sound-hud" class="w-7 h-7 bg-sky-900/90 hover:bg-sky-800 text-amber-300 rounded-lg border border-sky-400/40 flex items-center justify-center transition active:scale-95 shadow" title="Toggle Sound">
                         <i id="hud-sound-icon" class="fa-solid fa-volume-high text-xs"></i>
                     </button>
@@ -105,170 +97,220 @@
                 </div>
             </div>
 
-            <!-- Lower Secondary Stats Bar -->
+            <!-- Lower Stats Bar: Coins, Growth Rank, Mode Indicator -->
             <div class="flex justify-between items-center px-1 pointer-events-none">
                 <div class="flex items-center gap-2">
                     <div class="bg-slate-950/80 backdrop-blur-sm px-2.5 py-0.5 rounded-lg border border-amber-400/40 flex items-center gap-1.5 pointer-events-auto">
                         <i class="fa-solid fa-coins text-amber-400 text-xs"></i>
                         <span id="hud-total-points" class="font-retro text-[11px] text-amber-300">0</span>
                     </div>
-                    <div id="combo-badge" class="bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-retro text-[9px] px-2 py-0.5 rounded-md font-bold shadow transform scale-0 transition-transform duration-200">
-                        x<span id="hud-combo-count">1</span> MARIO STREAK!
+                    <div class="bg-slate-950/80 backdrop-blur-sm px-2.5 py-0.5 rounded-lg border border-emerald-400/40 flex items-center gap-1.5 pointer-events-auto">
+                        <i class="fa-solid fa-shield-cat text-emerald-400 text-xs"></i>
+                        <span id="hud-growth-rank" class="font-retro text-[9px] text-emerald-300">RANK I</span>
                     </div>
                 </div>
 
-                <!-- Active Power-up Pill Banner -->
-                <div id="fever-banner" class="bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 font-retro text-[9px] px-2.5 py-0.5 rounded-full text-white shadow animate-pulse hidden">
-                    <i class="fa-solid fa-bolt mr-1"></i> <span id="fever-text">FEVER FRENZY!</span>
+                <div class="flex items-center gap-2">
+                    <div id="combo-badge" class="bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-retro text-[9px] px-2 py-0.5 rounded-md font-bold shadow transform scale-0 transition-transform duration-200">
+                        x<span id="hud-combo-count">1</span> MARIO STREAK!
+                    </div>
+                    <div id="mode-badge" class="bg-sky-500/80 border border-sky-300 text-white font-retro text-[9px] px-2 py-0.5 rounded-md font-bold shadow">
+                        <i id="mode-icon" class="fa-solid fa-ship mr-1"></i> <span id="mode-text">BOAT MODE</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Touch Hint Overlay -->
-        <div id="touch-hint" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-center hidden">
-            <span class="bg-slate-950/90 text-amber-300 font-retro text-[10px] px-3.5 py-2 rounded-xl border border-amber-400/50 shadow-2xl animate-bounce flex items-center gap-1.5">
-                <i class="fa-solid fa-hand-pointer text-cyan-300"></i> TAP ANYWHERE TO CAST HOOK!
-            </span>
+        <!-- ON-SCREEN ACTION CONTROLS (Boat / Swim Mode Controls) -->
+        <div id="game-controls" class="absolute bottom-4 left-0 w-full px-4 z-10 flex justify-between items-center pointer-events-none hidden">
+            <!-- Left Side: Swim D-Pad / Move Touch Joystick -->
+            <div id="dpad-container" class="pointer-events-auto flex flex-col items-center gap-1 opacity-90 transition-opacity">
+                <div class="flex gap-1">
+                    <button id="btn-swim-up" class="w-10 h-10 bg-slate-900/80 active:bg-sky-600 border border-sky-400/50 rounded-xl text-white font-bold flex items-center justify-center text-sm shadow"><i class="fa-solid fa-arrow-up"></i></button>
+                </div>
+                <div class="flex gap-1">
+                    <button id="btn-swim-left" class="w-10 h-10 bg-slate-900/80 active:bg-sky-600 border border-sky-400/50 rounded-xl text-white font-bold flex items-center justify-center text-sm shadow"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button id="btn-swim-down" class="w-10 h-10 bg-slate-900/80 active:bg-sky-600 border border-sky-400/50 rounded-xl text-white font-bold flex items-center justify-center text-sm shadow"><i class="fa-solid fa-arrow-down"></i></button>
+                    <button id="btn-swim-right" class="w-10 h-10 bg-slate-900/80 active:bg-sky-600 border border-sky-400/50 rounded-xl text-white font-bold flex items-center justify-center text-sm shadow"><i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Right Side: Action Buttons (Cast / Jump Swim / Boost) -->
+            <div class="pointer-events-auto flex items-center gap-2">
+                <button id="btn-boost" class="w-12 h-12 bg-amber-500/90 hover:bg-amber-400 active:scale-95 border-2 border-yellow-200 rounded-full text-slate-950 font-retro text-[10px] flex flex-col items-center justify-center shadow-lg hidden">
+                    <i class="fa-solid fa-bolt text-sm"></i> BOOST
+                </button>
+                <button id="btn-action-main" class="px-4 py-3 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 active:scale-95 border-2 border-yellow-200 rounded-2xl text-slate-950 font-retro text-xs font-black flex items-center gap-2 shadow-2xl">
+                    <i id="btn-action-icon" class="fa-solid fa-anchor"></i> <span id="btn-action-text">CAST HOOK</span>
+                </button>
+                <button id="btn-mode-toggle" class="w-12 h-12 bg-cyan-600/90 hover:bg-cyan-500 active:scale-95 border-2 border-cyan-200 rounded-full text-white font-bold flex flex-col items-center justify-center text-[9px] shadow-lg">
+                    <i id="btn-toggle-icon" class="fa-solid fa-person-swimming text-sm"></i> DIVE
+                </button>
+            </div>
         </div>
 
         <!-- MAIN MENU MODAL -->
         <div id="modal-main-menu" class="absolute inset-0 z-20 flex flex-col justify-between p-5 bg-gradient-to-b from-sky-950/95 via-slate-950/98 to-slate-950 backdrop-blur-md">
-            <!-- Brand Header -->
-            <div class="text-center mt-4 animate-mario-bounce">
-                <div class="inline-block bg-sky-500/20 text-cyan-300 border border-cyan-400/40 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2">
+            <!-- Story Header -->
+            <div class="text-center mt-3 animate-mario-bounce">
+                <div class="inline-block bg-sky-500/20 text-cyan-300 border border-cyan-400/40 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-1.5">
                     Apex Mobility System Presents
                 </div>
-                <h1 class="text-2xl md:text-4xl font-retro font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-200 to-yellow-400 glow-mario drop-shadow-lg leading-snug">
+                <h1 class="text-2xl md:text-3xl font-retro font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-200 to-yellow-400 glow-mario drop-shadow-lg leading-snug">
                     FISHING TITANS
                 </h1>
-                <p class="text-xs font-retro text-cyan-300 tracking-wider mt-2">OCEAN QUEST 5D ARCADE</p>
+                <p class="text-[11px] font-retro text-cyan-300 tracking-wider mt-1">OCEAN QUEST: RESCUE THE PRINCESS</p>
+            </div>
+
+            <!-- Quest Banner -->
+            <div class="bg-gradient-to-r from-amber-500/20 via-sky-500/20 to-purple-500/20 border border-amber-500/40 p-3 rounded-2xl my-auto text-center max-w-xs mx-auto">
+                <p class="text-xs text-amber-200 font-bold mb-1"><i class="fa-solid fa-crown text-amber-400 mr-1"></i> Titan Quest Storyline</p>
+                <p class="text-[11px] text-slate-300 leading-tight">
+                    Princess Marina has been trapped in the deep Titan Trench! Cast your line or <span class="text-cyan-300 font-bold">jump out to swim underwater</span>, level up your Growth Rank, unlock custom boats, and rescue her!
+                </p>
             </div>
 
             <!-- Central Buttons -->
-            <div class="flex flex-col gap-3 w-full max-w-xs mx-auto my-auto">
-                <button id="btn-start-game" class="w-full py-3.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-retro text-sm font-black rounded-2xl shadow-2xl border-2 border-yellow-200 transform active:scale-95 transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-play"></i> START GAME
+            <div class="flex flex-col gap-2.5 w-full max-w-xs mx-auto mb-auto">
+                <button id="btn-start-game" class="w-full py-3.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 text-slate-950 font-retro text-xs font-black rounded-2xl shadow-2xl border-2 border-yellow-200 transform active:scale-95 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> START QUEST
                 </button>
                 
-                <div class="grid grid-cols-2 gap-2.5">
+                <div class="grid grid-cols-2 gap-2">
                     <button id="btn-open-upgrades" class="py-2.5 bg-slate-900/90 hover:bg-slate-800 text-amber-300 border border-amber-500/40 font-bold rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-1.5 text-xs">
-                        <i class="fa-solid fa-circle-up text-amber-400"></i> Gear Shop
+                        <i class="fa-solid fa-circle-up text-amber-400"></i> Gear & Boats
                     </button>
                     <button id="btn-open-tasks" class="py-2.5 bg-slate-900/90 hover:bg-slate-800 text-sky-300 border border-sky-400/40 font-bold rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-1.5 text-xs">
-                        <i class="fa-solid fa-list-check text-cyan-400"></i> Quests
+                        <i class="fa-solid fa-trophy text-cyan-400"></i> Quests
                     </button>
                 </div>
 
-                <button id="btn-open-biomes" class="w-full py-2.5 bg-slate-900/90 hover:bg-slate-800 text-indigo-300 border border-indigo-400/40 font-bold rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-2 text-xs">
+                <button id="btn-open-biomes" class="w-full py-2 bg-slate-900/90 hover:bg-slate-800 text-indigo-300 border border-indigo-400/40 font-bold rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-2 text-xs">
                     <i class="fa-solid fa-map-location-dot text-indigo-400"></i> 5D Ocean Biomes
                 </button>
             </div>
 
-            <!-- Audio & App Kit Footer -->
-            <div class="flex justify-between items-center text-xs text-sky-300 border-t border-slate-800 pt-3">
-                <button id="btn-toggle-sound-menu" class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-sky-500/30 text-xs font-semibold">
+            <!-- Footer -->
+            <div class="flex justify-between items-center text-xs text-sky-300 border-t border-slate-800 pt-2.5">
+                <button id="btn-toggle-sound-menu" class="flex items-center gap-1.5 bg-slate-900 px-3 py-1 rounded-xl border border-sky-500/30 text-xs font-semibold">
                     <i id="icon-sound-menu" class="fa-solid fa-volume-high text-emerald-400"></i>
                     <span id="text-sound-menu">Audio ON</span>
                 </button>
 
-                <button id="btn-open-app-kit" class="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-bold transition">
-                    <i class="fa-solid fa-shield-halved text-amber-400"></i> Play Store & Legal Kit
+                <button id="btn-open-app-kit" class="flex items-center gap-1 text-amber-300 hover:text-amber-200 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-xl text-xs font-bold transition">
+                    <i class="fa-solid fa-shield-halved text-amber-400"></i> Play Store & Legal
                 </button>
             </div>
         </div>
 
-        <!-- UPGRADE SHOP MODAL -->
+        <!-- GEAR & BOATS SHOP MODAL -->
         <div id="modal-upgrades" class="absolute inset-0 z-30 bg-slate-950/95 backdrop-blur-md p-5 flex flex-col justify-between hidden">
             <div>
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-3">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 mb-2.5">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-screwdriver-wrench text-amber-400 text-lg"></i>
-                        <h2 class="text-lg font-black text-white">MARIO GEAR SHOP</h2>
+                        <h2 class="text-base font-black text-white">GEAR & BOATS SHOP</h2>
                     </div>
                     <button id="btn-close-upgrades" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
-                <div class="bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-amber-500/40 p-2.5 rounded-xl mb-3 flex justify-between items-center">
-                    <span class="text-xs font-bold text-amber-300 uppercase">Available Gold Coins</span>
-                    <span class="text-base font-retro font-black text-amber-400 flex items-center gap-1">
+                <div class="bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-amber-500/40 p-2 rounded-xl mb-2.5 flex justify-between items-center">
+                    <span class="text-xs font-bold text-amber-300 uppercase">Available Coins</span>
+                    <span class="text-sm font-retro font-black text-amber-400 flex items-center gap-1">
                         <i class="fa-solid fa-coins"></i> <span id="shop-coins-display">0</span>
                     </span>
                 </div>
 
-                <div class="flex flex-col gap-2.5 max-h-[55vh] overflow-y-auto pr-1">
-                    <!-- Item 1 -->
-                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-9 h-9 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center text-base">
+                <div class="flex flex-col gap-2 max-h-[52vh] overflow-y-auto pr-1">
+                    <!-- Reel Speed -->
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center text-sm">
                                 <i class="fa-solid fa-gauge-high"></i>
                             </div>
                             <div>
-                                <h3 class="text-xs font-bold text-white">Titan Reel Motor</h3>
-                                <p class="text-[10px] text-slate-400">+25% faster reeling speed</p>
+                                <h3 class="text-xs font-bold text-white">Reel Motor</h3>
+                                <p class="text-[9px] text-slate-400">+25% faster reel speed</p>
                                 <span id="upgrade-lvl-reel" class="text-[9px] font-retro text-sky-400">Lvl 1/5</span>
                             </div>
                         </div>
-                        <button id="btn-buy-reel" class="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
+                        <button id="btn-buy-reel" class="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
                             <span id="cost-reel">150</span> Pts
                         </button>
                     </div>
 
-                    <!-- Item 2 -->
-                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-base">
+                    <!-- Hook Magnet -->
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm">
                                 <i class="fa-solid fa-magnet"></i>
                             </div>
                             <div>
-                                <h3 class="text-xs font-bold text-white">Super Magnet Hook</h3>
-                                <p class="text-[10px] text-slate-400">+20% catch radius area</p>
+                                <h3 class="text-xs font-bold text-white">Magnet Hook</h3>
+                                <p class="text-[9px] text-slate-400">+20% catch radius</p>
                                 <span id="upgrade-lvl-hook" class="text-[9px] font-retro text-emerald-400">Lvl 1/5</span>
                             </div>
                         </div>
-                        <button id="btn-buy-hook" class="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
+                        <button id="btn-buy-hook" class="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
                             <span id="cost-hook">200</span> Pts
                         </button>
                     </div>
 
-                    <!-- Item 3 -->
-                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-9 h-9 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center text-base">
-                                <i class="fa-solid fa-hourglass-half"></i>
+                    <!-- Swim Fins -->
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-person-swimming"></i>
                             </div>
                             <div>
-                                <h3 class="text-xs font-bold text-white">Chrono Clock Booster</h3>
-                                <p class="text-[10px] text-slate-400">+10s extra time per level</p>
-                                <span id="upgrade-lvl-time" class="text-[9px] font-retro text-rose-400">Lvl 1/5</span>
+                                <h3 class="text-xs font-bold text-white">Hydro Fins</h3>
+                                <p class="text-[9px] text-slate-400">+30% faster swim speed</p>
+                                <span id="upgrade-lvl-fins" class="text-[9px] font-retro text-cyan-400">Lvl 1/5</span>
                             </div>
                         </div>
-                        <button id="btn-buy-time" class="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
-                            <span id="cost-time">250</span> Pts
+                        <button id="btn-buy-fins" class="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
+                            <span id="cost-fins">200</span> Pts
                         </button>
                     </div>
 
-                    <!-- Item 4 -->
-                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-9 h-9 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-base">
-                                <i class="fa-solid fa-box-open"></i>
+                    <!-- Diving Suit -->
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-vest flex"></i>
                             </div>
                             <div>
-                                <h3 class="text-xs font-bold text-white">? Block Lucky Lure</h3>
-                                <p class="text-[10px] text-slate-400">+20% more ? Mystery crates & golden fish</p>
-                                <span id="upgrade-lvl-lure" class="text-[9px] font-retro text-purple-400">Lvl 1/5</span>
+                                <h3 class="text-xs font-bold text-white">Titan Scuba Suit</h3>
+                                <p class="text-[9px] text-slate-400">Jellyfish hazard shield underwater</p>
+                                <span id="upgrade-lvl-suit" class="text-[9px] font-retro text-purple-400">Lvl 1/5</span>
                             </div>
                         </div>
-                        <button id="btn-buy-lure" class="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
-                            <span id="cost-lure">350</span> Pts
+                        <button id="btn-buy-suit" class="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
+                            <span id="cost-suit">300</span> Pts
+                        </button>
+                    </div>
+
+                    <!-- Unlock Boat: Coral Cruiser -->
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-ship"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-bold text-white">Coral Cruiser Boat</h3>
+                                <p class="text-[9px] text-slate-400">+15% catch bonus across all fish</p>
+                            </div>
+                        </div>
+                        <button id="btn-buy-boat2" class="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
+                            <span id="cost-boat2">500</span> Pts
                         </button>
                     </div>
                 </div>
             </div>
 
-            <button id="btn-back-upgrades" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl mt-2">
+            <button id="btn-back-upgrades" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl mt-2">
                 Return to Menu
             </button>
         </div>
@@ -276,22 +318,22 @@
         <!-- QUESTS MODAL -->
         <div id="modal-tasks" class="absolute inset-0 z-30 bg-slate-950/95 backdrop-blur-md p-5 flex flex-col justify-between hidden">
             <div>
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-3">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 mb-3">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-trophy text-amber-400 text-lg"></i>
-                        <h2 class="text-lg font-black text-white">TITAN QUESTS & TASKS</h2>
+                        <h2 class="text-base font-black text-white">PRINCESS RESCUE QUESTS</h2>
                     </div>
                     <button id="btn-close-tasks" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
-                <div class="flex flex-col gap-2.5 max-h-[60vh] overflow-y-auto pr-1" id="quests-container">
-                    <!-- Dynamic quests -->
+                <div class="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1" id="quests-container">
+                    <!-- Dynamic quest items -->
                 </div>
             </div>
 
-            <button id="btn-back-tasks" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl mt-2">
+            <button id="btn-back-tasks" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl mt-2">
                 Return to Menu
             </button>
         </div>
@@ -299,85 +341,85 @@
         <!-- 5D BIOMES MODAL -->
         <div id="modal-biomes" class="absolute inset-0 z-30 bg-slate-950/95 backdrop-blur-md p-5 flex flex-col justify-between hidden">
             <div>
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-3">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 mb-3">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-water text-cyan-400 text-lg"></i>
-                        <h2 class="text-lg font-black text-white">5D OCEAN BIOMES</h2>
+                        <h2 class="text-base font-black text-white">5D OCEAN BIOMES</h2>
                     </div>
                     <button id="btn-close-biomes" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
-                <div class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
-                    <div class="bg-slate-900 border-2 border-cyan-500/50 p-3 rounded-xl flex justify-between items-center">
+                <div class="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
+                    <div class="bg-slate-900 border-2 border-cyan-500/50 p-2.5 rounded-xl flex justify-between items-center">
                         <div>
                             <span class="text-[9px] font-retro text-cyan-400">ZONE 1 (LVL 1-2)</span>
-                            <h3 class="text-sm font-bold text-white">Sunny Coral Cove</h3>
-                            <p class="text-[10px] text-slate-400">Reef angelfish & gentle sea turtles.</p>
+                            <h3 class="text-xs font-bold text-white">Sunny Coral Cove</h3>
+                            <p class="text-[9px] text-slate-400">Reef angelfish & gentle turtles.</p>
                         </div>
-                        <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+                        <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
                     </div>
 
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex justify-between items-center">
                         <div>
                             <span class="text-[9px] font-retro text-amber-400">ZONE 2 (LVL 3-4)</span>
-                            <h3 class="text-sm font-bold text-white">Golden Sunset Lagoon</h3>
-                            <p class="text-[10px] text-slate-400">Fast currents & golden multiplier fish.</p>
+                            <h3 class="text-xs font-bold text-white">Golden Sunset Lagoon</h3>
+                            <p class="text-[9px] text-slate-400">Golden fish & fast currents.</p>
                         </div>
-                        <i id="biome-lock-2" class="fa-solid fa-lock text-slate-600 text-lg"></i>
+                        <i id="biome-lock-2" class="fa-solid fa-lock text-slate-600 text-base"></i>
                     </div>
 
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex justify-between items-center">
                         <div>
                             <span class="text-[9px] font-retro text-emerald-400">ZONE 3 (LVL 5-6)</span>
-                            <h3 class="text-sm font-bold text-white">Emerald Seaweed Jungle</h3>
-                            <p class="text-[10px] text-slate-400">Dense kelp & hidden ? mystery crates.</p>
+                            <h3 class="text-xs font-bold text-white">Sunken Temple Ruins</h3>
+                            <p class="text-[9px] text-slate-400">Ancient relics & swim treasures.</p>
                         </div>
-                        <i id="biome-lock-3" class="fa-solid fa-lock text-slate-600 text-lg"></i>
+                        <i id="biome-lock-3" class="fa-solid fa-lock text-slate-600 text-base"></i>
                     </div>
 
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex justify-between items-center">
                         <div>
                             <span class="text-[9px] font-retro text-rose-400">ZONE 4 (LVL 7-8)</span>
-                            <h3 class="text-sm font-bold text-white">Volcanic Lava Trench</h3>
-                            <p class="text-[10px] text-slate-400">Magma vents & electrical jellyfish hazards!</p>
+                            <h3 class="text-xs font-bold text-white">Stormy Reef</h3>
+                            <p class="text-[9px] text-slate-400">Rough waves & electrical jellyfish!</p>
                         </div>
-                        <i id="biome-lock-4" class="fa-solid fa-lock text-slate-600 text-lg"></i>
+                        <i id="biome-lock-4" class="fa-solid fa-lock text-slate-600 text-base"></i>
                     </div>
 
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex justify-between items-center">
                         <div>
                             <span class="text-[9px] font-retro text-purple-400">ZONE 5 (LVL 9+)</span>
-                            <h3 class="text-sm font-bold text-white">Bioluminescent Titan Abyss</h3>
-                            <p class="text-[10px] text-slate-400">Glowing abyssal titans with mega points!</p>
+                            <h3 class="text-xs font-bold text-white">Midnight Titan Trench</h3>
+                            <p class="text-[9px] text-slate-400">Abyssal Titans & Princess Marina!</p>
                         </div>
-                        <i id="biome-lock-5" class="fa-solid fa-lock text-slate-600 text-lg"></i>
+                        <i id="biome-lock-5" class="fa-solid fa-lock text-slate-600 text-base"></i>
                     </div>
                 </div>
             </div>
 
-            <button id="btn-back-biomes" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl mt-2">
+            <button id="btn-back-biomes" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl mt-2">
                 Return to Menu
             </button>
         </div>
 
-        <!-- LEVEL RESULTS MODAL (WIN / LOSS) -->
-        <div id="modal-level-result" class="absolute inset-0 z-40 bg-slate-950/95 backdrop-blur-md p-6 flex flex-col items-center justify-center text-center hidden">
-            <div id="result-icon-container" class="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-3xl mb-3 border border-amber-500/40">
+        <!-- LEVEL RESULTS MODAL -->
+        <div id="modal-level-result" class="absolute inset-0 z-40 bg-slate-950/95 backdrop-blur-md p-5 flex flex-col items-center justify-center text-center hidden">
+            <div id="result-icon-container" class="w-14 h-14 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl mb-2 border border-amber-500/40">
                 <i class="fa-solid fa-trophy"></i>
             </div>
             
-            <h2 id="result-title" class="text-2xl font-retro font-black text-amber-400 glow-mario mb-1">COURSE CLEAR!</h2>
-            <p id="result-subtitle" class="text-xs text-sky-200 mb-4">You reached the required fish score target!</p>
+            <h2 id="result-title" class="text-xl font-retro font-black text-amber-400 glow-mario mb-1">STAGE CLEAR!</h2>
+            <p id="result-subtitle" class="text-xs text-sky-200 mb-3">You cleared the target fish score!</p>
 
-            <div class="flex gap-2 text-xl text-amber-400 mb-4">
+            <div class="flex gap-2 text-lg text-amber-400 mb-3">
                 <i id="star-1" class="fa-solid fa-star"></i>
                 <i id="star-2" class="fa-solid fa-star"></i>
                 <i id="star-3" class="fa-solid fa-star text-slate-700"></i>
             </div>
 
-            <div class="w-full max-w-xs bg-slate-900 border border-slate-800 rounded-xl p-3 mb-5 flex flex-col gap-1.5">
+            <div class="w-full max-w-xs bg-slate-900 border border-slate-800 rounded-xl p-2.5 mb-4 flex flex-col gap-1">
                 <div class="flex justify-between text-xs">
                     <span class="text-slate-400">Level Points:</span>
                     <span id="result-score" class="font-bold text-sky-300">240 Pts</span>
@@ -386,17 +428,17 @@
                     <span class="text-slate-400">Target Needed:</span>
                     <span id="result-target" class="font-bold text-slate-300">200 Pts</span>
                 </div>
-                <div class="flex justify-between text-xs border-t border-slate-800 pt-1.5">
-                    <span class="text-slate-400">Gold Coins Awarded:</span>
+                <div class="flex justify-between text-xs border-t border-slate-800 pt-1">
+                    <span class="text-slate-400">Coins Earned:</span>
                     <span id="result-coins" class="font-black text-amber-400">+240 Coins</span>
                 </div>
             </div>
 
-            <div class="flex flex-col gap-2.5 w-full max-w-xs">
-                <button id="btn-next-level" class="w-full py-3.5 bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-retro text-xs font-black rounded-xl shadow-lg border-2 border-yellow-200 active:scale-95 transition">
+            <div class="flex flex-col gap-2 w-full max-w-xs">
+                <button id="btn-next-level" class="w-full py-3 bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-retro text-xs font-black rounded-xl shadow-lg border-2 border-yellow-200 active:scale-95 transition">
                     NEXT LEVEL <i class="fa-solid fa-arrow-right ml-1"></i>
                 </button>
-                <button id="btn-retry-level" class="w-full py-2.5 bg-slate-800 text-slate-300 font-bold text-xs rounded-xl hover:bg-slate-700">
+                <button id="btn-retry-level" class="w-full py-2 bg-slate-800 text-slate-300 font-bold text-xs rounded-xl hover:bg-slate-700">
                     Retry Level
                 </button>
             </div>
@@ -415,122 +457,112 @@
                     </button>
                 </div>
 
-                <!-- Tabs -->
                 <div class="flex bg-slate-900 p-1 rounded-xl mb-3 gap-1 border border-slate-800">
-                    <button id="tab-store-btn" class="flex-1 py-1 text-[11px] font-bold rounded-lg bg-amber-400 text-slate-950">Store Copy</button>
-                    <button id="tab-webintoapp-btn" class="flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white">WebIntoApp</button>
-                    <button id="tab-privacy-btn" class="flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white">Privacy Policy</button>
+                    <button id="tab-store-btn" class="flex-1 py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950">Store Copy</button>
+                    <button id="tab-webintoapp-btn" class="flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white">WebIntoApp</button>
+                    <button id="tab-privacy-btn" class="flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white">Privacy Policy</button>
                 </div>
 
-                <!-- Tab 1: Play Store Listing -->
-                <div id="tab-store-content" class="max-h-[50vh] overflow-y-auto space-y-2.5 text-xs pr-1">
-                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex justify-between items-center">
+                <div id="tab-store-content" class="max-h-[48vh] overflow-y-auto space-y-2 text-xs pr-1">
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex justify-between items-center">
                         <div>
                             <div class="text-[9px] font-retro text-amber-400">APP NAME</div>
-                            <div class="font-bold text-white text-sm">Fishing Titans: Ocean Quest</div>
+                            <div class="font-bold text-white text-xs">Fishing Titans: Ocean Quest</div>
                         </div>
-                        <button onclick="copyText('Fishing Titans: Ocean Quest')" class="px-2 py-1 bg-slate-800 text-amber-300 rounded text-[10px] hover:bg-slate-700">Copy</button>
+                        <button onclick="copyText('Fishing Titans: Ocean Quest')" class="px-2 py-0.5 bg-slate-800 text-amber-300 rounded text-[10px]">Copy</button>
                     </div>
                     
-                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex justify-between items-center">
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex justify-between items-center">
                         <div>
                             <div class="text-[9px] font-retro text-amber-400">PACKAGE ID</div>
-                            <div class="font-mono text-cyan-300">com.apexmobilitysystem.fishingtitans</div>
+                            <div class="font-mono text-cyan-300 text-[11px]">com.apexmobilitysystem.fishingtitans</div>
                         </div>
-                        <button onclick="copyText('com.apexmobilitysystem.fishingtitans')" class="px-2 py-1 bg-slate-800 text-amber-300 rounded text-[10px] hover:bg-slate-700">Copy</button>
+                        <button onclick="copyText('com.apexmobilitysystem.fishingtitans')" class="px-2 py-0.5 bg-slate-800 text-amber-300 rounded text-[10px]">Copy</button>
                     </div>
 
-                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl">
                         <div class="text-[9px] font-retro text-amber-400 mb-1">SHORT DESCRIPTION</div>
-                        <p class="text-slate-200 text-[11px]">Cast your hook, brave 5D ocean biomes, hit ? mystery crates & upgrade gear!</p>
+                        <p class="text-slate-300 text-[11px]">Cast hooks, jump out & swim underwater, upgrade gear & rescue Princess Marina!</p>
                     </div>
 
-                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl">
                         <div class="text-[9px] font-retro text-amber-400 mb-1">FULL DESCRIPTION</div>
-                        <p class="text-slate-300 text-[11px] leading-relaxed whitespace-pre-line">
-                            Welcome to Fishing Titans: Ocean Quest by Apex Mobility System! 
+                        <p class="text-slate-300 text-[10px] leading-relaxed whitespace-pre-line">
+                            Welcome to Fishing Titans: Ocean Quest by Apex Mobility System!
 
-                            Embark on an arcade fishing adventure featuring 5D depth visual effects and Super Mario-inspired chiptune audio!
+                            Join our heroic angler on an arcade adventure across 5D ocean biomes to rescue Princess Marina from the deep Titan Trench!
 
-                            GAME FEATURES:
-                            • Dynamic Swing & Reel Physics: Precision hook timing and touch controls.
-                            • 5 Unique Ocean Biomes: Level up through Coral Cove, Sunset Lagoon, Seaweed Jungle, Volcanic Trench, and Titan Abyss.
-                            • Super Mario ? Mystery Crates: Catch floating mystery crates to trigger Fever Frenzy, Time Freeze, Magnet Hooks, or Coin Showers!
-                            • Chiptune Sound Engine: Retro arcade music and sound effects created with Web Audio.
-                            • Deep Upgrade Shop: Boost Reel Motor Speed, Hook Catch Radius, Level Timer, and Golden Lures.
-                            • Apex Mobility System Quality: Optimized for mobile play on all devices.
+                            FEATURES:
+                            • Seamless Dual Gameplay Modes: Switch instantly between Boat Fishing and Jump Out & Swim underwater modes!
+                            • Mario Arcade Feel: Catch ? Mystery Crates for Fever Frenzy, Time Freezes, and Coin Showers.
+                            • Synthesized Retro Chiptune Audio: NES sound effects and BGM loop.
+                            • Angler Growth Rank & Shop: Upgrade Reel Motor, Hydro Fins, Titan Suits, and unlock Custom Boats!
+                            • Built for Mobile: Smooth touch controls and fluid 60FPS canvas visuals.
                         </p>
                     </div>
                 </div>
 
-                <!-- Tab 2: WebIntoApp Instructions -->
-                <div id="tab-webintoapp-content" class="max-h-[50vh] overflow-y-auto space-y-2.5 text-xs pr-1 hidden">
+                <div id="tab-webintoapp-content" class="max-h-[48vh] overflow-y-auto space-y-2 text-xs pr-1 hidden">
                     <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
-                        <h4 class="font-bold text-amber-400 mb-1"><i class="fa-solid fa-sliders mr-1"></i> WebIntoApp Activation Setup</h4>
-                        <ul class="list-disc list-inside text-slate-300 space-y-1 text-[11px]">
+                        <h4 class="font-bold text-amber-400 mb-1 text-xs"><i class="fa-solid fa-sliders mr-1"></i> WebIntoApp Activation Setup</h4>
+                        <ul class="list-disc list-inside text-slate-300 text-[11px] space-y-1">
                             <li><strong>App Name:</strong> Fishing Titans</li>
-                            <li><strong>App Package ID:</strong> com.apexmobilitysystem.fishingtitans</li>
-                            <li><strong>Website Host URL:</strong> https://YOUR_GITHUB_USERNAME.github.io/fishing-titans/</li>
-                            <li><strong>App Mode:</strong> Dedicated HTML5 Web App</li>
-                            <li><strong>Orientation:</strong> Portrait / Auto-Rotate Supported</li>
-                            <li><strong>Fullscreen:</strong> Enabled (Hides system status bars)</li>
+                            <li><strong>Package ID:</strong> com.apexmobilitysystem.fishingtitans</li>
+                            <li><strong>App Mode:</strong> HTML5 Web App</li>
+                            <li><strong>Orientation:</strong> Portrait Supported</li>
+                            <li><strong>Fullscreen:</strong> Enabled</li>
                         </ul>
                     </div>
                 </div>
 
-                <!-- Tab 3: Privacy Policy HTML -->
-                <div id="tab-privacy-content" class="max-h-[50vh] overflow-y-auto space-y-2.5 text-xs pr-1 hidden">
+                <div id="tab-privacy-content" class="max-h-[48vh] overflow-y-auto space-y-2 text-xs pr-1 hidden">
                     <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
-                        <h4 class="font-bold text-white mb-1">Privacy Policy & Terms of Service</h4>
-                        <p class="text-slate-300 text-[11px] leading-relaxed mb-2">
+                        <h4 class="font-bold text-white mb-1 text-xs">Privacy Policy & Terms of Service</h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed mb-2">
                             <strong>Developer:</strong> Apex Mobility System<br>
                             <strong>Effective Date:</strong> November 2026
                         </p>
-                        <p class="text-slate-300 text-[11px] leading-relaxed mb-2">
-                            Fishing Titans: Ocean Quest collects NO personal data. Game state, high scores, and gear upgrades are stored exclusively on your device using standard offline `localStorage`.
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            Fishing Titans: Ocean Quest collects NO personal user data. All high scores, gear upgrades, and quest progress are stored locally on your device via standard `localStorage`.
                         </p>
                     </div>
                 </div>
             </div>
 
-            <button id="btn-back-app-kit" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl mt-2">
+            <button id="btn-back-app-kit" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl mt-2">
                 Return to Menu
             </button>
         </div>
 
     </div>
 
-    <!-- RETRO CHIPTUNE WEB AUDIO & GAME ENGINE -->
+    <!-- RETRO CHIPTUNE WEB AUDIO ENGINE & DUAL-MODE GAME LOOP -->
     <script>
-        // --- AUTHENTIC SUPER MARIO NES-STYLE WEB AUDIO CHIPTUNE ENGINE ---
+        // --- RETRO CHIPTUNE AUDIO ENGINE ---
         class MarioSoundEngine {
             constructor() {
                 this.ctx = null;
                 this.enabled = true;
                 this.bgmPlaying = false;
                 this.bgmTimer = null;
-                this.tempo = 135; // BPM
+                this.tempo = 135;
                 this.currentNoteStep = 0;
             }
 
             init() {
                 if (!this.ctx) {
                     const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (AudioContext) {
-                        this.ctx = new AudioContext();
-                    }
+                    if (AudioContext) this.ctx = new AudioContext();
                 }
                 if (this.ctx && this.ctx.state === 'suspended') {
                     this.ctx.resume();
                 }
             }
 
-            // Play synthesized retro note
             playNote(freq, type = 'square', duration = 0.1, gainVal = 0.15) {
                 if (!this.enabled) return;
                 this.init();
                 if (!this.ctx) return;
-
                 try {
                     const osc = this.ctx.createOscillator();
                     const gain = this.ctx.createGain();
@@ -538,72 +570,44 @@
                     osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
                     gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-
                     osc.connect(gain);
                     gain.connect(this.ctx.destination);
-
                     osc.start();
                     osc.stop(this.ctx.currentTime + duration);
                 } catch(e) {}
             }
 
-            // Mario Coin Sound (B5 -> E6 square wave)
             playCoin() {
                 if (!this.enabled) return;
                 this.init();
                 if (!this.ctx) return;
-
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'square';
-                
                 osc.frequency.setValueAtTime(987.77, now); // B5
                 osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
-
-                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.setValueAtTime(0.18, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
                 osc.stop(now + 0.35);
             }
 
-            // Mario Power-up / ? Block Arpeggio
             playPowerup() {
                 if (!this.enabled) return;
                 this.init();
-                if (!this.ctx) return;
-
-                const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99]; // C4 E4 G4 C5 E5 G5
+                const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
                 notes.forEach((freq, i) => {
-                    setTimeout(() => {
-                        this.playNote(freq, 'triangle', 0.12, 0.25);
-                    }, i * 45);
+                    setTimeout(() => this.playNote(freq, 'triangle', 0.12, 0.2), i * 40);
                 });
             }
 
-            // 1-UP Sound
-            play1Up() {
-                if (!this.enabled) return;
-                this.init();
-                if (!this.ctx) return;
-
-                const notes = [1318.51, 1567.98, 2637.02, 2093.00, 2349.32, 3135.96];
-                notes.forEach((freq, i) => {
-                    setTimeout(() => {
-                        this.playNote(freq, 'square', 0.1, 0.2);
-                    }, i * 50);
-                });
-            }
-
-            // Hook Cast / Spring Boing
             playCast() {
                 if (!this.enabled) return;
                 this.init();
                 if (!this.ctx) return;
-
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
@@ -612,19 +616,16 @@
                 osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
                 gain.gain.setValueAtTime(0.2, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
                 osc.stop(now + 0.15);
             }
 
-            // Hazard Pipe Pitch Drop (Jellyfish hit)
             playHazard() {
                 if (!this.enabled) return;
                 this.init();
                 if (!this.ctx) return;
-
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
@@ -633,17 +634,18 @@
                 osc.frequency.linearRampToValueAtTime(90, now + 0.25);
                 gain.gain.setValueAtTime(0.25, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
                 osc.stop(now + 0.25);
             }
 
-            // Stage Clear Victory Fanfare
+            playSplash() {
+                this.playNote(160, 'sawtooth', 0.15, 0.3);
+            }
+
             playVictory() {
                 if (!this.enabled) return;
-                this.init();
                 const melody = [
                     {f: 523.25, d: 0.12}, {f: 659.25, d: 0.12}, {f: 783.99, d: 0.12},
                     {f: 1046.50, d: 0.25}, {f: 880.00, d: 0.12}, {f: 1046.50, d: 0.4}
@@ -655,10 +657,8 @@
                 });
             }
 
-            // Game Over Tune
             playGameOver() {
                 if (!this.enabled) return;
-                this.init();
                 const melody = [
                     {f: 392.00, d: 0.18}, {f: 329.63, d: 0.18}, {f: 261.63, d: 0.18},
                     {f: 220.00, d: 0.3}, {f: 196.00, d: 0.5}
@@ -670,32 +670,24 @@
                 });
             }
 
-            // Bouncy Retro Mario-style Chiptune BGM Loop
             startBGM() {
                 if (this.bgmPlaying || !this.enabled) return;
                 this.bgmPlaying = true;
-                
-                // Classic Chiptune Melody Pitch Frequency Array (Mario-inspired motif)
                 const bgmNotes = [
                     659.25, 659.25, 0, 659.25, 0, 523.25, 659.25, 0,
                     783.99, 0, 0, 0, 392.00, 0, 0, 0,
                     523.25, 0, 0, 392.00, 0, 0, 329.63, 0,
                     440.00, 0, 493.88, 0, 466.16, 440.00, 0, 0
                 ];
-
                 this.currentNoteStep = 0;
                 const stepTime = () => (60 / this.tempo / 4) * 1000;
-
                 const runStep = () => {
                     if (!this.bgmPlaying) return;
                     let note = bgmNotes[this.currentNoteStep % bgmNotes.length];
-                    if (note > 0 && this.enabled) {
-                        this.playNote(note, 'square', 0.08, 0.06);
-                    }
+                    if (note > 0 && this.enabled) this.playNote(note, 'square', 0.08, 0.05);
                     this.currentNoteStep++;
                     this.bgmTimer = setTimeout(runStep, stepTime());
                 };
-
                 runStep();
             }
 
@@ -711,7 +703,6 @@
 
         const sound = new MarioSoundEngine();
 
-        // Unlock Web Audio on first user interaction anywhere
         function unlockAudio() {
             sound.init();
             window.removeEventListener('pointerdown', unlockAudio);
@@ -720,27 +711,27 @@
         window.addEventListener('pointerdown', unlockAudio);
         window.addEventListener('keydown', unlockAudio);
 
-        // --- STORAGE & PERSISTENCE ---
+        // --- STORAGE ---
         const Storage = {
             get: () => {
                 const def = {
-                    totalCoins: 0, highestLevel: 1, reelLvl: 1, hookLvl: 1, timeLvl: 1, lureLvl: 1, soundOn: true,
+                    totalCoins: 0, highestLevel: 1, reelLvl: 1, hookLvl: 1, finsLvl: 1, suitLvl: 1, boatLvl: 1, soundOn: true,
                     quests: { catches: 0, goldenCatches: 0, cratesOpened: 0, levelsWon: 0 }
                 };
                 try {
-                    const saved = localStorage.getItem('FISHING_TITANS_5D_DATA');
+                    const saved = localStorage.getItem('FISHING_TITANS_5D_DATA_V2');
                     return saved ? { ...def, ...JSON.parse(saved) } : def;
                 } catch(e) { return def; }
             },
             save: (data) => {
-                try { localStorage.setItem('FISHING_TITANS_5D_DATA', JSON.stringify(data)); } catch(e) {}
+                try { localStorage.setItem('FISHING_TITANS_5D_DATA_V2', JSON.stringify(data)); } catch(e) {}
             }
         };
 
         let gameStateData = Storage.get();
         sound.enabled = gameStateData.soundOn;
 
-        // --- GAME ENGINE & CANVAS SETUP ---
+        // --- CANVAS & STATE ENGINE ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         let width = 0, height = 0, dpr = 1;
@@ -767,15 +758,23 @@
         let isPaused = false;
         let comboCount = 0;
         let screenShakeTime = 0;
-        let feverModeTime = 0;
+        let mode = 'BOAT'; // 'BOAT' or 'SWIM'
 
-        // Boat & Hook Positioning (Fixed boat lower to ensure ZERO HUD overlap)
+        // Boat & Diver Position
         let boat = { x: 0, y: 0, width: 85, height: 35, waveOffset: 0 };
         let hook = {
             x: 0, y: 0, angle: 0, angleSpeed: 0.035, maxAngle: Math.PI / 2.4,
             length: 28, maxLength: 0, state: 'SWING', baseSpeed: 4.5, speed: 4.5,
             caughtEntity: null, radius: 11
         };
+
+        let diver = {
+            x: 0, y: 0, vx: 0, vy: 0, state: 'IN_BOAT', // 'IN_BOAT', 'JUMPING', 'SWIMMING'
+            size: 16, oxygen: 100, isBoosting: false
+        };
+
+        // Key controls state for swimming
+        let keys = { up: false, down: false, left: false, right: false };
 
         let entities = [];
         let particles = [];
@@ -785,41 +784,11 @@
 
         // 5D Biome Definitions
         const BIOMES = [
-            {
-                name: "Sunny Coral Cove",
-                levels: [1, 2],
-                skyGradient: ['#38bdf8', '#e0f2fe'],
-                waterGradient: ['rgba(14, 165, 233, 0.85)', 'rgba(3, 105, 161, 0.95)'],
-                seabedColor: '#0284c7', sunColor: '#facc15', jellyRate: 0.12, crateRate: 0.15
-            },
-            {
-                name: "Golden Sunset Lagoon",
-                levels: [3, 4],
-                skyGradient: ['#f97316', '#ffedd5'],
-                waterGradient: ['rgba(2, 132, 199, 0.85)', 'rgba(15, 23, 42, 0.95)'],
-                seabedColor: '#0369a1', sunColor: '#ea580c', jellyRate: 0.20, crateRate: 0.20
-            },
-            {
-                name: "Emerald Seaweed Jungle",
-                levels: [5, 6],
-                skyGradient: ['#0d9488', '#ccfbf1'],
-                waterGradient: ['rgba(15, 118, 110, 0.85)', 'rgba(4, 47, 46, 0.95)'],
-                seabedColor: '#115e59', sunColor: '#2dd4bf', jellyRate: 0.25, crateRate: 0.25
-            },
-            {
-                name: "Volcanic Lava Trench",
-                levels: [7, 8],
-                skyGradient: ['#991b1b', '#fef2f2'],
-                waterGradient: ['rgba(153, 27, 27, 0.85)', 'rgba(69, 10, 10, 0.95)'],
-                seabedColor: '#7f1d1d', sunColor: '#ef4444', jellyRate: 0.32, crateRate: 0.25
-            },
-            {
-                name: "Bioluminescent Titan Abyss",
-                levels: [9, 99],
-                skyGradient: ['#0f172a', '#020617'],
-                waterGradient: ['rgba(30, 27, 75, 0.9)', 'rgba(3, 7, 18, 0.98)'],
-                seabedColor: '#1e1b4b', sunColor: '#818cf8', jellyRate: 0.35, crateRate: 0.30
-            }
+            { name: "Sunny Coral Cove", skyGradient: ['#38bdf8', '#e0f2fe'], waterGradient: ['rgba(14, 165, 233, 0.85)', 'rgba(3, 105, 161, 0.95)'], seabedColor: '#0284c7', sunColor: '#facc15' },
+            { name: "Golden Sunset Lagoon", skyGradient: ['#f97316', '#ffedd5'], waterGradient: ['rgba(2, 132, 199, 0.85)', 'rgba(15, 23, 42, 0.95)'], seabedColor: '#0369a1', sunColor: '#ea580c' },
+            { name: "Sunken Temple Ruins", skyGradient: ['#0d9488', '#ccfbf1'], waterGradient: ['rgba(15, 118, 110, 0.85)', 'rgba(4, 47, 46, 0.95)'], seabedColor: '#115e59', sunColor: '#2dd4bf' },
+            { name: "Stormy Reef", skyGradient: ['#991b1b', '#fef2f2'], waterGradient: ['rgba(153, 27, 27, 0.85)', 'rgba(69, 10, 10, 0.95)'], seabedColor: '#7f1d1d', sunColor: '#ef4444' },
+            { name: "Midnight Titan Trench", skyGradient: ['#0f172a', '#020617'], waterGradient: ['rgba(30, 27, 75, 0.9)', 'rgba(3, 7, 18, 0.98)'], seabedColor: '#1e1b4b', sunColor: '#818cf8' }
         ];
 
         function getCurrentBiome() {
@@ -830,14 +799,22 @@
             return BIOMES[4];
         }
 
-        // --- GAME ENTITIES & MARIO ? CRATES ---
+        function getGrowthRank() {
+            const coins = gameStateData.totalCoins;
+            if (coins >= 1500) return { rank: "RANK IV - TITAN MASTER", scale: 1.25, bonus: 1.5 };
+            if (coins >= 800)  return { rank: "RANK III - OCEAN CAPTAIN", scale: 1.15, bonus: 1.3 };
+            if (coins >= 300)  return { rank: "RANK II - DEEP DIVER", scale: 1.08, bonus: 1.15 };
+            return { rank: "RANK I - REEF ANGLER", scale: 1.0, bonus: 1.0 };
+        }
+
+        // --- ENTITIES CLASS ---
         class FishEntity {
             constructor(type, yMin, yMax) {
                 this.type = type; // 'reef', 'angel', 'turtle', 'golden', 'titan', 'jelly', 'crate'
                 this.x = Math.random() > 0.5 ? -40 : width + 40;
                 this.direction = this.x < 0 ? 1 : -1;
                 this.y = yMin + Math.random() * (yMax - yMin);
-                
+
                 if (type === 'reef') {
                     this.width = 32; this.height = 20; this.speed = (1.5 + Math.random() * 1.5) * this.direction;
                     this.points = 30; this.weight = 1.0; this.color = '#f97316';
@@ -859,8 +836,7 @@
                     this.points = -50; this.weight = 1.5; this.color = '#f43f5e';
                     this.yMinLimit = yMin; this.yMaxLimit = yMax;
                 } else if (type === 'crate') {
-                    // Super Mario Mystery Crate!
-                    this.width = 32; this.height = 32; this.speed = (0.9 + Math.random() * 0.6) * this.direction;
+                    this.width = 30; this.height = 30; this.speed = (0.8 + Math.random() * 0.5) * this.direction;
                     this.points = 150; this.weight = 1.2; this.color = '#eab308';
                 }
             }
@@ -880,93 +856,55 @@
                 if (this.direction === -1 && this.type !== 'jelly' && this.type !== 'crate') ctx.scale(-1, 1);
 
                 if (this.type === 'crate') {
-                    // Super Mario ? Mystery Block
-                    ctx.shadowColor = '#eab308';
-                    ctx.shadowBlur = 10;
-                    ctx.fillStyle = '#eab308';
-                    ctx.fillRect(-16, -16, 32, 32);
-                    ctx.strokeStyle = '#854d0e';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(-16, -16, 32, 32);
-                    
-                    // Question mark symbol
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = '900 18px "Press Start 2P", monospace';
-                    ctx.fillText('?', -6, 6);
+                    ctx.shadowColor = '#eab308'; ctx.shadowBlur = 10;
+                    ctx.fillStyle = '#eab308'; ctx.fillRect(-15, -15, 30, 30);
+                    ctx.strokeStyle = '#854d0e'; ctx.lineWidth = 3; ctx.strokeRect(-15, -15, 30, 30);
+                    ctx.fillStyle = '#ffffff'; ctx.font = '900 16px "Press Start 2P", monospace';
+                    ctx.fillText('?', -5, 5);
                 } else if (this.type === 'reef') {
-                    ctx.fillStyle = this.color;
-                    ctx.beginPath(); ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = this.color; ctx.beginPath(); ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2); ctx.fill();
                     ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-20, -7); ctx.lineTo(-20, 7); ctx.closePath(); ctx.fill();
                     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(8, -3, 3, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(9, -3, 1.5, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'angel') {
-                    ctx.fillStyle = '#38bdf8';
-                    ctx.beginPath(); ctx.ellipse(0, 0, 18, 20, 0, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4;
-                    ctx.beginPath(); ctx.moveTo(-6, -16); ctx.lineTo(-6, 16); ctx.moveTo(4, -18); ctx.lineTo(4, 18); ctx.stroke();
-                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(8, -5, 3.5, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(9, -5, 1.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.ellipse(0, 0, 18, 20, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-6, -16); ctx.lineTo(-6, 16); ctx.stroke();
                 } else if (this.type === 'turtle') {
                     ctx.fillStyle = '#15803d'; ctx.beginPath(); ctx.ellipse(0, 0, 20, 14, 0, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2; ctx.stroke();
                     ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(18, 0, 6, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.ellipse(10, -12, 10, 4, Math.PI / 4, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.ellipse(10, 12, 10, 4, -Math.PI / 4, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'golden') {
                     ctx.shadowColor = '#facc15'; ctx.shadowBlur = 12;
                     ctx.fillStyle = '#eab308'; ctx.beginPath(); ctx.ellipse(0, 0, 18, 12, 0, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#fef08a'; ctx.beginPath(); ctx.arc(6, -3, 3, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'titan') {
                     ctx.shadowColor = '#c084fc'; ctx.shadowBlur = 16;
                     ctx.fillStyle = '#6b21a8'; ctx.beginPath(); ctx.ellipse(0, 0, 32, 22, 0, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.moveTo(15, -10); ctx.quadraticCurveTo(25, -24, 32, -14); ctx.stroke();
-                    ctx.fillStyle = '#e9d5ff'; ctx.beginPath(); ctx.arc(32, -14, 4, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'jelly') {
-                    ctx.fillStyle = 'rgba(244, 63, 94, 0.85)';
-                    ctx.beginPath(); ctx.arc(0, -6, 16, Math.PI, 0); ctx.fill();
+                    ctx.fillStyle = 'rgba(244, 63, 94, 0.85)'; ctx.beginPath(); ctx.arc(0, -6, 16, Math.PI, 0); ctx.fill();
                     ctx.strokeStyle = '#fda4af'; ctx.lineWidth = 2;
                     for (let i = -10; i <= 10; i += 5) {
                         ctx.beginPath(); ctx.moveTo(i, -6);
-                        ctx.quadraticCurveTo(i + Math.sin(Date.now() * 0.01 + i) * 5, 10, i, 20);
-                        ctx.stroke();
+                        ctx.quadraticCurveTo(i + Math.sin(Date.now() * 0.01 + i) * 5, 10, i, 20); ctx.stroke();
                     }
                 }
                 ctx.restore();
             }
         }
 
-        // --- ENVIRONMENT SETUP ---
         function initCloudsAndRays() {
             clouds = [];
-            for (let i = 0; i < 4; i++) {
-                clouds.push({
-                    x: Math.random() * width, y: 12 + Math.random() * 30,
-                    size: 20 + Math.random() * 20, speed: 0.2 + Math.random() * 0.3
-                });
-            }
+            for (let i = 0; i < 4; i++) clouds.push({ x: Math.random() * width, y: 10 + Math.random() * 25, size: 20 + Math.random() * 18, speed: 0.2 + Math.random() * 0.3 });
             godRays = [];
-            for (let i = 0; i < 5; i++) {
-                godRays.push({
-                    x: (width / 5) * i + Math.random() * 40,
-                    width: 30 + Math.random() * 40,
-                    alpha: 0.08 + Math.random() * 0.12
-                });
-            }
+            for (let i = 0; i < 5; i++) godRays.push({ x: (width / 5) * i + Math.random() * 30, width: 30 + Math.random() * 40, alpha: 0.08 + Math.random() * 0.1 });
         }
 
-        // --- LEVEL CONTROLLER ---
         function startNewLevel(lvl) {
             currentLevel = lvl;
             const biome = getCurrentBiome();
 
             targetPoints = 180 + (lvl * 60);
             levelPoints = 0;
-            timeLeft = 60 - Math.min(lvl * 2, 20) + (gameStateData.timeLvl - 1) * 10;
+            timeLeft = 60 - Math.min(lvl * 2, 20);
             comboCount = 0;
-            feverModeTime = 0;
 
-            // Boat position: 28% down canvas (CLEAR SKY ABOVE ANGLER FACE, ZERO HUD OVERLAP)
             boat.x = width / 2;
             boat.y = height * 0.28;
             hook.x = boat.x;
@@ -976,28 +914,33 @@
             hook.maxLength = height * 0.90;
             hook.state = 'SWING';
             hook.caughtEntity = null;
-            hook.radius = 11 + (gameStateData.hookLvl - 1) * 3;
+
+            diver.state = 'IN_BOAT';
+            diver.x = boat.x;
+            diver.y = boat.y - 10;
+            diver.vx = 0; diver.vy = 0;
+            mode = 'BOAT';
 
             entities = [];
             particles = [];
             floatingTexts = [];
 
-            // Initial fish spawn
-            const count = 6 + Math.min(lvl, 8);
-            for (let i = 0; i < count; i++) spawnRandomFish();
+            for (let i = 0; i < 7 + Math.min(lvl, 6); i++) spawnRandomFish();
 
-            // HUD updates
             document.getElementById('hud-level-badge').innerText = `LVL ${lvl}`;
             document.getElementById('hud-biome-name').innerText = biome.name;
             document.getElementById('hud-target-points').innerText = targetPoints;
             document.getElementById('hud-level-points').innerText = '0';
             document.getElementById('hud-total-points').innerText = gameStateData.totalCoins;
+            document.getElementById('hud-growth-rank').innerText = getGrowthRank().rank.split(' - ')[0];
             document.getElementById('hud-timer').innerText = `${timeLeft}s`;
+
+            updateModeUI();
 
             document.getElementById('modal-main-menu').classList.add('hidden');
             document.getElementById('modal-level-result').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
-            document.getElementById('touch-hint').classList.remove('hidden');
+            document.getElementById('game-controls').classList.remove('hidden');
 
             isPlaying = true;
             isPaused = false;
@@ -1016,116 +959,223 @@
         }
 
         function spawnRandomFish() {
-            const biome = getCurrentBiome();
             const yMin = height * 0.38;
             const yMax = height * 0.88;
             const rand = Math.random();
             let type = 'reef';
 
-            const lureBonus = (gameStateData.lureLvl - 1) * 0.05;
-
-            if (feverModeTime > 0) {
-                type = 'golden';
-            } else if (rand < biome.crateRate + lureBonus) {
-                type = 'crate';
-            } else if (rand < biome.crateRate + biome.jellyRate) {
-                type = 'jelly';
-            } else if (rand < 0.65) {
-                type = currentLevel >= 5 ? 'titan' : 'golden';
-            } else if (rand < 0.82) {
-                type = 'angel';
-            } else {
-                type = 'turtle';
-            }
+            if (rand < 0.15) type = 'crate';
+            else if (rand < 0.35) type = 'jelly';
+            else if (rand < 0.60) type = currentLevel >= 4 ? 'titan' : 'golden';
+            else if (rand < 0.80) type = 'angel';
+            else type = 'turtle';
 
             entities.push(new FishEntity(type, yMin, yMax));
         }
 
-        function triggerCast() {
-            if (!isPlaying || isPaused) return;
-            if (hook.state === 'SWING') {
-                hook.state = 'CAST';
-                sound.playCast();
-                document.getElementById('touch-hint').classList.add('hidden');
-            } else if (hook.state === 'REEL') {
-                const boost = 1.2 + (gameStateData.reelLvl * 0.25);
-                hook.speed += boost;
+        function updateModeUI() {
+            const modeText = document.getElementById('mode-text');
+            const modeIcon = document.getElementById('mode-icon');
+            const btnText = document.getElementById('btn-action-text');
+            const btnIcon = document.getElementById('btn-action-icon');
+            const btnToggleIcon = document.getElementById('btn-toggle-icon');
+            const dpad = document.getElementById('dpad-container');
+            const btnBoost = document.getElementById('btn-boost');
+
+            if (mode === 'BOAT') {
+                modeText.innerText = "BOAT MODE";
+                modeIcon.className = "fa-solid fa-ship mr-1";
+                btnText.innerText = "CAST HOOK";
+                btnIcon.className = "fa-solid fa-anchor";
+                btnToggleIcon.className = "fa-solid fa-person-swimming text-sm";
+                dpad.classList.add('opacity-30');
+                btnBoost.classList.add('hidden');
+            } else {
+                modeText.innerText = "SWIM MODE";
+                modeIcon.className = "fa-solid fa-person-swimming mr-1";
+                btnText.innerText = "SWIM GRAB";
+                btnIcon.className = "fa-solid fa-hand text-sm";
+                btnToggleIcon.className = "fa-solid fa-ship text-sm";
+                dpad.classList.remove('opacity-30');
+                btnBoost.classList.remove('hidden');
             }
         }
 
-        window.addEventListener('pointerdown', (e) => {
-            if (e.target.closest('#hud') || e.target.closest('.z-20') || e.target.closest('.z-30') || e.target.closest('.z-40') || e.target.closest('.z-50')) {
-                return;
+        function toggleMode() {
+            if (!isPlaying || isPaused) return;
+            if (mode === 'BOAT') {
+                // Jump out of boat into water
+                mode = 'SWIM';
+                diver.state = 'JUMPING';
+                diver.x = boat.x;
+                diver.y = boat.y - 12;
+                diver.vx = 2.5;
+                diver.vy = -5.0; // Jump arc
+                sound.playSplash();
+            } else {
+                // Board boat if close, or pull back automatically
+                mode = 'BOAT';
+                diver.state = 'IN_BOAT';
+                diver.x = boat.x;
+                diver.y = boat.y - 10;
+                sound.playCast();
             }
-            triggerCast();
-        });
+            updateModeUI();
+        }
 
+        function triggerMainAction() {
+            if (!isPlaying || isPaused) return;
+            if (mode === 'BOAT') {
+                if (hook.state === 'SWING') {
+                    hook.state = 'CAST';
+                    sound.playCast();
+                } else if (hook.state === 'REEL') {
+                    hook.speed += 1.5;
+                }
+            } else {
+                // Swim grab up close
+                diver.isBoosting = true;
+                setTimeout(() => diver.isBoosting = false, 300);
+            }
+        }
+
+        // --- KEY & TOUCH CONTROLS ---
         window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' || e.code === 'ArrowDown') triggerCast();
+            if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.up = true;
+            if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.down = true;
+            if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = true;
+            if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = true;
+            if (e.code === 'Space') triggerMainAction();
+            if (e.code === 'KeyE') toggleMode();
         });
 
-        // --- GAME UPDATE LOOP ---
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.up = false;
+            if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.down = false;
+            if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = false;
+            if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = false;
+        });
+
+        // D-Pad Touch Listeners
+        const bindDPad = (id, key) => {
+            const el = document.getElementById(id);
+            el.addEventListener('pointerdown', (e) => { e.preventDefault(); keys[key] = true; });
+            el.addEventListener('pointerup', () => keys[key] = false);
+            el.addEventListener('pointerleave', () => keys[key] = false);
+        };
+        bindDPad('btn-swim-up', 'up'); bindDPad('btn-swim-down', 'down');
+        bindDPad('btn-swim-left', 'left'); bindDPad('btn-swim-right', 'right');
+
+        document.getElementById('btn-action-main').addEventListener('click', triggerMainAction);
+        document.getElementById('btn-mode-toggle').addEventListener('click', toggleMode);
+        document.getElementById('btn-boost').addEventListener('click', () => {
+            diver.isBoosting = true; sound.playCast();
+            setTimeout(() => diver.isBoosting = false, 400);
+        });
+
+        // --- UPDATE LOOP ---
         function updateGame() {
             if (!isPlaying || isPaused) return;
 
-            if (feverModeTime > 0) {
-                feverModeTime -= 0.016;
-                if (feverModeTime <= 0) {
-                    document.getElementById('fever-banner').classList.add('hidden');
+            // BOAT HOOK MECHANICS
+            if (mode === 'BOAT') {
+                if (hook.state === 'SWING') {
+                    hook.angle += hook.angleSpeed;
+                    if (Math.abs(hook.angle) > hook.maxAngle) hook.angleSpeed *= -1;
+                    hook.x = boat.x + Math.sin(hook.angle) * hook.length;
+                    hook.y = boat.y + 20 + Math.cos(hook.angle) * hook.length;
+                } else if (hook.state === 'CAST') {
+                    hook.length += hook.baseSpeed * 1.5;
+                    hook.x = boat.x + Math.sin(hook.angle) * hook.length;
+                    hook.y = boat.y + 20 + Math.cos(hook.angle) * hook.length;
+
+                    if (hook.y >= hook.maxLength || hook.x <= 15 || hook.x >= width - 15) hook.state = 'REEL';
+
+                    for (let i = entities.length - 1; i >= 0; i--) {
+                        let ent = entities[i];
+                        let dist = Math.hypot(hook.x - ent.x, hook.y - ent.y);
+                        if (dist < hook.radius + ent.width / 2) {
+                            hook.caughtEntity = ent;
+                            entities.splice(i, 1);
+                            hook.state = 'REEL';
+                            if (ent.type === 'jelly') sound.playHazard();
+                            else if (ent.type === 'crate') sound.playPowerup();
+                            break;
+                        }
+                    }
+                } else if (hook.state === 'REEL') {
+                    let reelMotor = 3.5 + (gameStateData.reelLvl * 0.9);
+                    let drag = hook.caughtEntity ? hook.caughtEntity.weight : 1.0;
+                    hook.length -= (reelMotor / drag);
+                    hook.x = boat.x + Math.sin(hook.angle) * hook.length;
+                    hook.y = boat.y + 20 + Math.cos(hook.angle) * hook.length;
+
+                    if (hook.caughtEntity) {
+                        hook.caughtEntity.x = hook.x;
+                        hook.caughtEntity.y = hook.y + 10;
+                    }
+
+                    if (hook.length <= 25) {
+                        hook.length = 25;
+                        hook.state = 'SWING';
+                        if (hook.caughtEntity) {
+                            processCatch(hook.caughtEntity);
+                            hook.caughtEntity = null;
+                        }
+                    }
                 }
             }
 
-            // Hook Mechanics
-            if (hook.state === 'SWING') {
-                hook.angle += hook.angleSpeed;
-                if (Math.abs(hook.angle) > hook.maxAngle) hook.angleSpeed *= -1;
-                hook.x = boat.x + Math.sin(hook.angle) * hook.length;
-                hook.y = boat.y + 20 + Math.cos(hook.angle) * hook.length;
-            } else if (hook.state === 'CAST') {
-                hook.length += hook.baseSpeed * 1.5;
-                hook.x = boat.x + Math.sin(hook.angle) * hook.length;
-                hook.y = boat.y + 20 + Math.cos(hook.angle) * hook.length;
-
-                if (hook.y >= hook.maxLength || hook.x <= 15 || hook.x >= width - 15) {
-                    hook.state = 'REEL';
-                }
-
-                for (let i = entities.length - 1; i >= 0; i--) {
-                    let ent = entities[i];
-                    let dist = Math.hypot(hook.x - ent.x, hook.y - ent.y);
-                    if (dist < hook.radius + ent.width / 2) {
-                        hook.caughtEntity = ent;
-                        entities.splice(i, 1);
-                        hook.state = 'REEL';
-                        if (ent.type === 'jelly') {
-                            sound.playHazard();
-                            comboCount = 0;
-                            updateComboDisplay();
-                        } else if (ent.type === 'crate') {
-                            sound.playPowerup();
-                        }
-                        break;
+            // DIVER SWIM MECHANICS (Jump out & swim)
+            if (mode === 'SWIM') {
+                if (diver.state === 'JUMPING') {
+                    diver.x += diver.vx;
+                    diver.y += diver.vy;
+                    diver.vy += 0.35; // Gravity arc
+                    if (diver.y >= height * 0.30) {
+                        diver.state = 'SWIMMING';
+                        sound.playSplash();
                     }
-                }
-            } else if (hook.state === 'REEL') {
-                let reelMotor = 3.5 + (gameStateData.reelLvl * 0.9);
-                let drag = hook.caughtEntity ? hook.caughtEntity.weight : 1.0;
-                hook.length -= (reelMotor / drag);
+                } else if (diver.state === 'SWIMMING') {
+                    let swimSpeed = 2.8 + (gameStateData.finsLvl * 0.6);
+                    if (diver.isBoosting) swimSpeed *= 1.8;
 
-                hook.x = boat.x + Math.sin(hook.angle) * hook.length;
-                hook.y = boat.y + 20 + Math.cos(hook.angle) * hook.length;
+                    if (keys.left) diver.vx = -swimSpeed;
+                    else if (keys.right) diver.vx = swimSpeed;
+                    else diver.vx *= 0.85;
 
-                if (hook.caughtEntity) {
-                    hook.caughtEntity.x = hook.x;
-                    hook.caughtEntity.y = hook.y + 10;
-                }
+                    if (keys.up) diver.vy = -swimSpeed;
+                    else if (keys.down) diver.vy = swimSpeed;
+                    else diver.vy *= 0.85;
 
-                if (hook.length <= 25) {
-                    hook.length = 25;
-                    hook.state = 'SWING';
-                    if (hook.caughtEntity) {
-                        processCatch(hook.caughtEntity);
-                        hook.caughtEntity = null;
+                    diver.x += diver.vx;
+                    diver.y += diver.vy;
+
+                    // Bounds & Water surface
+                    diver.x = Math.max(15, Math.min(width - 15, diver.x));
+                    diver.y = Math.max(height * 0.28, Math.min(height - 25, diver.y));
+
+                    // Near boat surface check -> option to jump back in
+                    if (diver.y <= height * 0.30 && Math.abs(diver.x - boat.x) < 30) {
+                        mode = 'BOAT';
+                        diver.state = 'IN_BOAT';
+                        updateModeUI();
+                    }
+
+                    // Direct Swim Catch Collision
+                    for (let i = entities.length - 1; i >= 0; i--) {
+                        let ent = entities[i];
+                        let dist = Math.hypot(diver.x - ent.x, diver.y - ent.y);
+                        if (dist < diver.size + ent.width / 2) {
+                            if (ent.type === 'jelly' && gameStateData.suitLvl > 1) {
+                                // Scuba suit protects against jellyfish
+                                floatingTexts.push({ text: 'SUIT SHIELD!', x: diver.x, y: diver.y - 15, color: '#c084fc', alpha: 1.0 });
+                            } else {
+                                processCatch(ent);
+                            }
+                            entities.splice(i, 1);
+                            break;
+                        }
                     }
                 }
             }
@@ -1139,67 +1189,41 @@
                     spawnRandomFish();
                 }
             }
-
             if (entities.length < 6) spawnRandomFish();
 
-            // Floating Text animations (Mario-style "+100!")
+            // Floating Score Popups
             for (let i = floatingTexts.length - 1; i >= 0; i--) {
                 let ft = floatingTexts[i];
-                ft.y -= 1.0;
-                ft.alpha -= 0.025;
+                ft.y -= 1.0; ft.alpha -= 0.025;
                 if (ft.alpha <= 0) floatingTexts.splice(i, 1);
             }
         }
 
         function processCatch(ent) {
             let pts = ent.points;
+            const rankInfo = getGrowthRank();
 
             if (ent.type === 'crate') {
-                // Mario ? Mystery Crate Rewards!
                 gameStateData.quests.cratesOpened++;
-                const rewards = ['fever', 'freeze', 'coins', '1up'];
-                const reward = rewards[Math.floor(Math.random() * rewards.length)];
-
-                if (reward === 'fever') {
-                    feverModeTime = 6;
-                    document.getElementById('fever-text').innerText = "FEVER FRENZY!";
-                    document.getElementById('fever-banner').classList.remove('hidden');
-                    sound.playPowerup();
-                    floatingTexts.push({ text: 'FEVER FRENZY!', x: boat.x, y: boat.y - 25, color: '#facc15', alpha: 1.0 });
-                } else if (reward === 'freeze') {
-                    timeLeft += 10;
-                    sound.play1Up();
-                    floatingTexts.push({ text: '+10s TIME!', x: boat.x, y: boat.y - 25, color: '#38bdf8', alpha: 1.0 });
-                } else if (reward === 'coins') {
-                    pts = 200;
-                    sound.playCoin();
-                    floatingTexts.push({ text: '+200 COINS!', x: boat.x, y: boat.y - 25, color: '#facc15', alpha: 1.0 });
-                } else {
-                    sound.play1Up();
-                    floatingTexts.push({ text: '1-UP BONUS!', x: boat.x, y: boat.y - 25, color: '#4ade80', alpha: 1.0 });
-                }
+                pts = 150;
+                sound.playPowerup();
+                floatingTexts.push({ text: '? MYSTERY CRATE!', x: mode === 'BOAT' ? boat.x : diver.x, y: mode === 'BOAT' ? boat.y - 20 : diver.y - 15, color: '#facc15', alpha: 1.0 });
             } else if (pts > 0) {
                 comboCount++;
                 let mult = Math.min(comboCount, 5);
-                pts *= mult;
-
-                if (ent.type === 'titan') {
-                    sound.play1Up();
-                    screenShakeTime = 12;
-                } else {
-                    sound.playCoin();
-                }
+                pts = Math.round(pts * mult * rankInfo.bonus);
+                if (ent.type === 'titan') { sound.playVictory(); screenShakeTime = 12; }
+                else sound.playCoin();
 
                 gameStateData.quests.catches++;
                 if (ent.type === 'golden' || ent.type === 'titan') gameStateData.quests.goldenCatches++;
 
-                floatingTexts.push({
-                    text: `+${pts} ${mult > 1 ? 'x' + mult : ''}`,
-                    x: boat.x, y: boat.y - 20, color: ent.color, alpha: 1.0
-                });
+                floatingTexts.push({ text: `+${pts} ${mult > 1 ? 'x' + mult : ''}`, x: mode === 'BOAT' ? boat.x : diver.x, y: mode === 'BOAT' ? boat.y - 20 : diver.y - 15, color: ent.color, alpha: 1.0 });
             } else {
                 pts = -40;
-                floatingTexts.push({ text: 'HAZARD! -40', x: boat.x, y: boat.y - 20, color: '#f43f5e', alpha: 1.0 });
+                comboCount = 0;
+                sound.playHazard();
+                floatingTexts.push({ text: 'HAZARD! -40', x: mode === 'BOAT' ? boat.x : diver.x, y: mode === 'BOAT' ? boat.y - 20 : diver.y - 15, color: '#f43f5e', alpha: 1.0 });
             }
 
             levelPoints = Math.max(0, levelPoints + pts);
@@ -1208,19 +1232,7 @@
 
             document.getElementById('hud-level-points').innerText = levelPoints;
             document.getElementById('hud-total-points').innerText = gameStateData.totalCoins;
-            updateComboDisplay();
-        }
-
-        function updateComboDisplay() {
-            const badge = document.getElementById('combo-badge');
-            if (comboCount > 1) {
-                document.getElementById('hud-combo-count').innerText = comboCount;
-                badge.classList.remove('scale-0');
-                badge.classList.add('scale-100');
-            } else {
-                badge.classList.remove('scale-100');
-                badge.classList.add('scale-0');
-            }
+            document.getElementById('hud-growth-rank').innerText = getGrowthRank().rank.split(' - ')[0];
         }
 
         function endLevel() {
@@ -1241,34 +1253,18 @@
                 gameStateData.quests.levelsWon++;
                 if (currentLevel >= gameStateData.highestLevel) gameStateData.highestLevel = currentLevel + 1;
                 Storage.save(gameStateData);
-
-                document.getElementById('result-title').innerText = "COURSE CLEAR!";
-                document.getElementById('result-title').className = "text-2xl font-retro font-black text-amber-400 glow-mario mb-1";
-                document.getElementById('result-subtitle').innerText = "You mastered this 5D ocean zone!";
+                document.getElementById('result-title').innerText = "STAGE CLEAR!";
                 document.getElementById('btn-next-level').classList.remove('hidden');
-
-                let ratio = levelPoints / targetPoints;
-                document.getElementById('star-1').className = "fa-solid fa-star text-amber-400";
-                document.getElementById('star-2').className = ratio >= 1.3 ? "fa-solid fa-star text-amber-400" : "fa-solid fa-star text-slate-700";
-                document.getElementById('star-3').className = ratio >= 1.7 ? "fa-solid fa-star text-amber-400" : "fa-solid fa-star text-slate-700";
             } else {
                 sound.playGameOver();
                 document.getElementById('result-title').innerText = "GAME OVER";
-                document.getElementById('result-title').className = "text-2xl font-retro font-black text-rose-500 mb-1";
-                document.getElementById('result-subtitle').innerText = "Not enough fish score target!";
                 document.getElementById('btn-next-level').classList.add('hidden');
-
-                document.getElementById('star-1').className = "fa-solid fa-star text-slate-700";
-                document.getElementById('star-2').className = "fa-solid fa-star text-slate-700";
-                document.getElementById('star-3').className = "fa-solid fa-star text-slate-700";
             }
         }
 
-        // --- RENDER LOOP WITH 5D VISUAL DEPTH ---
+        // --- RENDER LOOP ---
         function render() {
             ctx.save();
-
-            // Screen shake effect on big Titan catches
             if (screenShakeTime > 0) {
                 screenShakeTime--;
                 ctx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8);
@@ -1277,251 +1273,172 @@
             ctx.clearRect(0, 0, width, height);
             const biome = getCurrentBiome();
 
-            // 1. Multi-layer Sky Gradient (5D Depth)
+            // Sky
             let skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.28);
             skyGrad.addColorStop(0, biome.skyGradient[0]);
             skyGrad.addColorStop(1, biome.skyGradient[1]);
-            ctx.fillStyle = skyGrad;
-            ctx.fillRect(0, 0, width, height * 0.28);
+            ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, width, height * 0.28);
 
-            // Sun & Sunbeams (God Rays)
+            // Sun & Clouds
             ctx.fillStyle = biome.sunColor;
             ctx.beginPath(); ctx.arc(width * 0.8, height * 0.08, 22, 0, Math.PI * 2); ctx.fill();
-
-            // Drifting Clouds
             ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
             clouds.forEach(c => {
-                c.x += c.speed;
-                if (c.x > width + 40) c.x = -40;
-                ctx.beginPath();
-                ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
-                ctx.arc(c.x + 14, c.y - 8, c.size * 0.8, 0, Math.PI * 2);
-                ctx.arc(c.x + 28, c.y, c.size * 0.7, 0, Math.PI * 2);
-                ctx.fill();
+                c.x += c.speed; if (c.x > width + 40) c.x = -40;
+                ctx.beginPath(); ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2); ctx.fill();
             });
 
-            // 2. 5D Ocean Water Gradient & Underwater Volumetric Rays
+            // Water
             let waterGrad = ctx.createLinearGradient(0, height * 0.28, 0, height);
             waterGrad.addColorStop(0, biome.waterGradient[0]);
             waterGrad.addColorStop(1, biome.waterGradient[1]);
-            ctx.fillStyle = waterGrad;
-            ctx.fillRect(0, height * 0.28, width, height * 0.72);
+            ctx.fillStyle = waterGrad; ctx.fillRect(0, height * 0.28, width, height * 0.72);
 
-            // Volumetric Underwater God-rays
-            godRays.forEach(ray => {
-                let rayGrad = ctx.createLinearGradient(ray.x, height * 0.28, ray.x + 40, height);
-                rayGrad.addColorStop(0, `rgba(255, 255, 255, ${ray.alpha})`);
-                rayGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-                ctx.fillStyle = rayGrad;
-                ctx.beginPath();
-                ctx.moveTo(ray.x, height * 0.28);
-                ctx.lineTo(ray.x + ray.width, height * 0.28);
-                ctx.lineTo(ray.x + ray.width + 60, height);
-                ctx.lineTo(ray.x - 20, height);
-                ctx.closePath();
-                ctx.fill();
-            });
+            // Seabed
+            ctx.fillStyle = biome.seabedColor; ctx.fillRect(0, height - 16, width, 16);
 
-            // Seabed Coral & Plants
-            ctx.fillStyle = biome.seabedColor;
-            ctx.fillRect(0, height - 16, width, 16);
-
-            // 3. 2.5D Animated Wave Layer (Boat bobs gently on wave)
+            // Boat & Angler (Boat Mode)
             boat.waveOffset = Math.sin(Date.now() * 0.003) * 4;
             let currentBoatY = boat.y + boat.waveOffset;
 
-            // Fisherman Character & Boat Hull (Positioned cleanly at 28% height, ZERO HUD OVERLAP)
             ctx.save();
             ctx.translate(boat.x, currentBoatY);
 
-            // Fisherman Hat & Face (Hat top at Y ≈ height*0.28 - 35, well below HUD)
-            ctx.fillStyle = '#15803d'; // Shirt
-            ctx.fillRect(-10, -22, 16, 18);
-            ctx.fillStyle = '#facc15'; // Yellow Hat
-            ctx.beginPath(); ctx.arc(-2, -26, 10, Math.PI, 0); ctx.fill();
-            ctx.fillRect(-14, -26, 24, 3);
-            ctx.fillStyle = '#fde047'; // Face
-            ctx.fillRect(-6, -20, 10, 8);
-
-            // Fishing Rod
-            ctx.strokeStyle = '#eab308'; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(18, -28); ctx.stroke();
+            // Fisherman (In Boat)
+            if (diver.state === 'IN_BOAT') {
+                ctx.fillStyle = '#15803d'; ctx.fillRect(-10, -22, 16, 18);
+                ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(-2, -26, 10, Math.PI, 0); ctx.fill();
+                ctx.fillStyle = '#fde047'; ctx.fillRect(-6, -20, 10, 8);
+                ctx.strokeStyle = '#eab308'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(18, -28); ctx.stroke();
+            }
 
             // Boat Hull
-            ctx.fillStyle = '#854d0e';
-            ctx.beginPath();
-            ctx.moveTo(-42, -4); ctx.lineTo(42, -4); ctx.lineTo(30, 18); ctx.lineTo(-30, 18);
-            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = gameStateData.boatLvl > 1 ? '#0284c7' : '#854d0e';
+            ctx.beginPath(); ctx.moveTo(-42, -4); ctx.lineTo(42, -4); ctx.lineTo(30, 18); ctx.lineTo(-30, 18); ctx.closePath(); ctx.fill();
             ctx.restore();
 
-            // Wave Surface Crest
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.moveTo(0, height * 0.28);
-            for (let x = 0; x <= width; x += 15) {
-                ctx.lineTo(x, height * 0.28 + Math.sin(Date.now() * 0.003 + x * 0.03) * 4);
+            // Diver Swimming Character
+            if (diver.state === 'JUMPING' || diver.state === 'SWIMMING') {
+                ctx.save();
+                ctx.translate(diver.x, diver.y);
+                ctx.fillStyle = '#0ea5e9'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(4, -2, 4, 0, Math.PI * 2); ctx.fill(); // Mask
+                if (gameStateData.finsLvl > 1) {
+                    ctx.fillStyle = '#facc15'; ctx.fillRect(-14, -4, 8, 8); // Fins
+                }
+                ctx.restore();
             }
-            ctx.stroke();
 
-            // 4. Hook Line
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(boat.x + 18, currentBoatY - 28);
-            ctx.lineTo(hook.x, hook.y);
-            ctx.stroke();
+            // Hook Line (Boat Mode)
+            if (mode === 'BOAT') {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(boat.x + 18, currentBoatY - 28); ctx.lineTo(hook.x, hook.y); ctx.stroke();
+                ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.arc(hook.x, hook.y + 4, hook.radius * 0.6, 0, Math.PI); ctx.stroke();
+            }
 
-            // Hook Metal
-            ctx.save();
-            ctx.translate(hook.x, hook.y);
-            ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2.5;
-            ctx.beginPath(); ctx.arc(0, 4, hook.radius * 0.6, 0, Math.PI); ctx.stroke();
-            ctx.restore();
-
-            // 5. Entities & Mario Popups
+            // Entities & Floating Text
             entities.forEach(ent => ent.draw());
             if (hook.caughtEntity) hook.caughtEntity.draw();
 
-            // Mario Floating "+100" Score Text
             floatingTexts.forEach(ft => {
-                ctx.save();
-                ctx.globalAlpha = ft.alpha;
-                ctx.fillStyle = ft.color;
-                ctx.font = '900 15px "Press Start 2P", monospace';
-                ctx.fillText(ft.text, ft.x - 24, ft.y);
-                ctx.restore();
+                ctx.save(); ctx.globalAlpha = ft.alpha; ctx.fillStyle = ft.color;
+                ctx.font = '900 14px "Press Start 2P", monospace';
+                ctx.fillText(ft.text, ft.x - 20, ft.y); ctx.restore();
             });
 
             ctx.restore();
-
             updateGame();
             requestAnimationFrame(render);
         }
 
-        // --- UI & CONTROLLER HANDLERS ---
+        // --- SETUP MODALS & UI ---
         function setupUI() {
             initCloudsAndRays();
 
             document.getElementById('btn-start-game').addEventListener('click', () => {
-                sound.playCoin();
-                startNewLevel(gameStateData.highestLevel);
+                sound.playCoin(); startNewLevel(gameStateData.highestLevel);
             });
 
             const toggleSound = () => {
                 gameStateData.soundOn = !gameStateData.soundOn;
                 sound.enabled = gameStateData.soundOn;
                 Storage.save(gameStateData);
-                const icon = document.getElementById('icon-sound-menu');
-                const hudIcon = document.getElementById('hud-sound-icon');
-                const text = document.getElementById('text-sound-menu');
-                if (gameStateData.soundOn) {
-                    icon.className = "fa-solid fa-volume-high text-emerald-400";
-                    hudIcon.className = "fa-solid fa-volume-high text-xs";
-                    text.innerText = "Audio ON";
-                    if (isPlaying) sound.startBGM();
-                } else {
-                    icon.className = "fa-solid fa-volume-xmark text-rose-400";
-                    hudIcon.className = "fa-solid fa-volume-xmark text-xs";
-                    text.innerText = "Audio OFF";
-                    sound.stopBGM();
-                }
+                document.getElementById('icon-sound-menu').className = gameStateData.soundOn ? "fa-solid fa-volume-high text-emerald-400" : "fa-solid fa-volume-xmark text-rose-400";
+                document.getElementById('hud-sound-icon').className = gameStateData.soundOn ? "fa-solid fa-volume-high text-xs" : "fa-solid fa-volume-xmark text-xs";
+                document.getElementById('text-sound-menu').innerText = gameStateData.soundOn ? "Audio ON" : "Audio OFF";
             };
             document.getElementById('btn-toggle-sound-menu').addEventListener('click', toggleSound);
             document.getElementById('btn-sound-hud').addEventListener('click', toggleSound);
 
-            // Upgrades Modal
-            const openUpgrades = () => {
+            // Upgrades Shop Modal
+            document.getElementById('btn-open-upgrades').addEventListener('click', () => {
                 sound.playCoin();
                 document.getElementById('shop-coins-display').innerText = gameStateData.totalCoins;
-                document.getElementById('upgrade-lvl-reel').innerText = `Lvl ${gameStateData.reelLvl}/5`;
-                document.getElementById('upgrade-lvl-hook').innerText = `Lvl ${gameStateData.hookLvl}/5`;
-                document.getElementById('upgrade-lvl-time').innerText = `Lvl ${gameStateData.timeLvl}/5`;
-                document.getElementById('upgrade-lvl-lure').innerText = `Lvl ${gameStateData.lureLvl}/5`;
                 document.getElementById('modal-upgrades').classList.remove('hidden');
-            };
-            document.getElementById('btn-open-upgrades').addEventListener('click', openUpgrades);
+            });
             document.getElementById('btn-close-upgrades').addEventListener('click', () => document.getElementById('modal-upgrades').classList.add('hidden'));
             document.getElementById('btn-back-upgrades').addEventListener('click', () => document.getElementById('modal-upgrades').classList.add('hidden'));
 
             // Upgrade Buyers
             document.getElementById('btn-buy-reel').addEventListener('click', () => buyUpgrade('reelLvl', 150));
             document.getElementById('btn-buy-hook').addEventListener('click', () => buyUpgrade('hookLvl', 200));
-            document.getElementById('btn-buy-time').addEventListener('click', () => buyUpgrade('timeLvl', 250));
-            document.getElementById('btn-buy-lure').addEventListener('click', () => buyUpgrade('lureLvl', 350));
+            document.getElementById('btn-buy-fins').addEventListener('click', () => buyUpgrade('finsLvl', 200));
+            document.getElementById('btn-buy-suit').addEventListener('click', () => buyUpgrade('suitLvl', 300));
+            document.getElementById('btn-buy-boat2').addEventListener('click', () => buyUpgrade('boatLvl', 500));
 
             function buyUpgrade(key, cost) {
                 if (gameStateData[key] >= 5) return;
                 if (gameStateData.totalCoins >= cost) {
                     gameStateData.totalCoins -= cost;
                     gameStateData[key]++;
-                    Storage.save(gameStateData);
-                    sound.playPowerup();
-                    openUpgrades();
-                } else {
-                    sound.playHazard();
-                }
+                    Storage.save(gameStateData); sound.playPowerup();
+                    document.getElementById('shop-coins-display').innerText = gameStateData.totalCoins;
+                } else sound.playHazard();
             }
 
             // Quests Modal
             document.getElementById('btn-open-tasks').addEventListener('click', () => {
-                sound.playCoin();
-                renderQuests();
+                sound.playCoin(); renderQuests();
                 document.getElementById('modal-tasks').classList.remove('hidden');
             });
             document.getElementById('btn-close-tasks').addEventListener('click', () => document.getElementById('modal-tasks').classList.add('hidden'));
             document.getElementById('btn-back-tasks').addEventListener('click', () => document.getElementById('modal-tasks').classList.add('hidden'));
 
             function renderQuests() {
-                const container = document.getElementById('quests-container');
                 const q = gameStateData.quests;
-                container.innerHTML = `
-                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
-                        <div class="flex justify-between text-xs font-bold text-white mb-1">
+                document.getElementById('quests-container').innerHTML = `
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl text-xs">
+                        <div class="flex justify-between font-bold text-white mb-1">
                             <span>Catch 20 Total Fish</span>
                             <span class="text-amber-400 font-retro">${q.catches}/20</span>
                         </div>
-                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                            <div class="bg-amber-400 h-full" style="width: ${Math.min(100, (q.catches/20)*100)}%"></div>
-                        </div>
                     </div>
-                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
-                        <div class="flex justify-between text-xs font-bold text-white mb-1">
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl text-xs">
+                        <div class="flex justify-between font-bold text-white mb-1">
                             <span>Open 5 ? Mystery Crates</span>
                             <span class="text-cyan-400 font-retro">${q.cratesOpened}/5</span>
                         </div>
-                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                            <div class="bg-cyan-400 h-full" style="width: ${Math.min(100, (q.cratesOpened/5)*100)}%"></div>
-                        </div>
                     </div>
-                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
-                        <div class="flex justify-between text-xs font-bold text-white mb-1">
-                            <span>Complete 3 Level Courses</span>
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl text-xs">
+                        <div class="flex justify-between font-bold text-white mb-1">
+                            <span>Rescue Princess Marina (Stage Clear 3)</span>
                             <span class="text-emerald-400 font-retro">${q.levelsWon}/3</span>
-                        </div>
-                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                            <div class="bg-emerald-400 h-full" style="width: ${Math.min(100, (q.levelsWon/3)*100)}%"></div>
                         </div>
                     </div>
                 `;
             }
 
-            // Biomes Selector Modal
+            // Biomes Modal
             document.getElementById('btn-open-biomes').addEventListener('click', () => {
-                sound.playCoin();
-                if (gameStateData.highestLevel >= 3) document.getElementById('biome-lock-2').className = "fa-solid fa-circle-check text-emerald-400 text-lg";
-                if (gameStateData.highestLevel >= 5) document.getElementById('biome-lock-3').className = "fa-solid fa-circle-check text-emerald-400 text-lg";
-                if (gameStateData.highestLevel >= 7) document.getElementById('biome-lock-4').className = "fa-solid fa-circle-check text-emerald-400 text-lg";
-                if (gameStateData.highestLevel >= 9) document.getElementById('biome-lock-5').className = "fa-solid fa-circle-check text-emerald-400 text-lg";
-                document.getElementById('modal-biomes').classList.remove('hidden');
+                sound.playCoin(); document.getElementById('modal-biomes').classList.remove('hidden');
             });
             document.getElementById('btn-close-biomes').addEventListener('click', () => document.getElementById('modal-biomes').classList.add('hidden'));
             document.getElementById('btn-back-biomes').addEventListener('click', () => document.getElementById('modal-biomes').classList.add('hidden'));
 
             // App Kit Modal
             document.getElementById('btn-open-app-kit').addEventListener('click', () => {
-                sound.playCoin();
-                document.getElementById('modal-app-kit').classList.remove('hidden');
+                sound.playCoin(); document.getElementById('modal-app-kit').classList.remove('hidden');
             });
             document.getElementById('btn-close-app-kit').addEventListener('click', () => document.getElementById('modal-app-kit').classList.add('hidden'));
             document.getElementById('btn-back-app-kit').addEventListener('click', () => document.getElementById('modal-app-kit').classList.add('hidden'));
@@ -1535,52 +1452,35 @@
             const tabPrivacyContent = document.getElementById('tab-privacy-content');
 
             tabStoreBtn.addEventListener('click', () => {
-                tabStoreBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg bg-amber-400 text-slate-950";
-                tabWebintoappBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabPrivacyBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabStoreContent.classList.remove('hidden');
-                tabWebintoappContent.classList.add('hidden');
-                tabPrivacyContent.classList.add('hidden');
+                tabStoreBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950";
+                tabWebintoappBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
+                tabPrivacyBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
+                tabStoreContent.classList.remove('hidden'); tabWebintoappContent.classList.add('hidden'); tabPrivacyContent.classList.add('hidden');
             });
-
             tabWebintoappBtn.addEventListener('click', () => {
-                tabWebintoappBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg bg-amber-400 text-slate-950";
-                tabStoreBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabPrivacyBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabWebintoappContent.classList.remove('hidden');
-                tabStoreContent.classList.add('hidden');
-                tabPrivacyContent.classList.add('hidden');
+                tabWebintoappBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950";
+                tabStoreBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
+                tabPrivacyBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
+                tabWebintoappContent.classList.remove('hidden'); tabStoreContent.classList.add('hidden'); tabPrivacyContent.classList.add('hidden');
             });
-
             tabPrivacyBtn.addEventListener('click', () => {
-                tabPrivacyBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg bg-amber-400 text-slate-950";
-                tabStoreBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabWebintoappBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabPrivacyContent.classList.remove('hidden');
-                tabStoreContent.classList.add('hidden');
-                tabWebintoappContent.classList.add('hidden');
+                tabPrivacyBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950";
+                tabStoreBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
+                tabWebintoappBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
+                tabPrivacyContent.classList.remove('hidden'); tabStoreContent.classList.add('hidden'); tabWebintoappContent.classList.add('hidden');
             });
 
             // Results Navigation
-            document.getElementById('btn-next-level').addEventListener('click', () => {
-                sound.playCoin();
-                startNewLevel(currentLevel + 1);
-            });
-            document.getElementById('btn-retry-level').addEventListener('click', () => {
-                sound.playCoin();
-                startNewLevel(currentLevel);
-            });
+            document.getElementById('btn-next-level').addEventListener('click', () => { sound.playCoin(); startNewLevel(currentLevel + 1); });
+            document.getElementById('btn-retry-level').addEventListener('click', () => { sound.playCoin(); startNewLevel(currentLevel); });
 
             requestAnimationFrame(render);
         }
 
-        // Clipboard Copy Helper
         function copyText(str) {
             const el = document.createElement('textarea');
-            el.value = str;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
+            el.value = str; document.body.appendChild(el);
+            el.select(); document.execCommand('copy');
             document.body.removeChild(el);
         }
 
