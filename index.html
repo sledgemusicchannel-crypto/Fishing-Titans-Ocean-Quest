@@ -16,15 +16,16 @@
             -webkit-user-select: none;
             touch-action: manipulation;
             font-family: 'Fredoka', sans-serif;
+            box-sizing: border-box;
         }
         .font-retro {
             font-family: 'Press Start 2P', monospace;
         }
-        body, html {
+        html, body {
             margin: 0;
             padding: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100dvh;
             overflow: hidden;
             background-color: #030712;
         }
@@ -57,27 +58,32 @@
             animation: marioPulse 1.8s infinite ease-in-out;
         }
         .btn-dpad {
-            background: rgba(15, 23, 42, 0.85);
-            border: 2px solid rgba(56, 189, 248, 0.5);
+            background: rgba(15, 23, 42, 0.9);
+            border: 2px solid rgba(56, 189, 248, 0.6);
             color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-            transition: all 0.1s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+            transition: transform 0.08s ease, background-color 0.08s ease;
+            touch-action: none;
         }
         .btn-dpad:active, .btn-dpad.active {
             background: #0284c7;
-            border-color: #38bdf8;
+            border-color: #facc15;
             transform: scale(0.92);
+        }
+        /* Mobile Safe Area Padding */
+        .safe-bottom-padding {
+            padding-bottom: max(0.85rem, env(safe-area-inset-bottom));
         }
     </style>
 </head>
-<body class="flex justify-center items-center h-screen w-screen overflow-hidden text-white bg-slate-950">
+<body class="flex justify-center items-center h-[100dvh] w-screen overflow-hidden text-white bg-slate-950">
 
     <!-- MAIN GAME CONTAINER -->
-    <div id="game-container" class="relative w-full h-full max-w-md md:max-w-2xl lg:max-w-4xl mx-auto flex flex-col shadow-2xl overflow-hidden bg-sky-950">
+    <div id="game-container" class="relative w-full h-[100dvh] max-w-md md:max-w-xl lg:max-w-3xl mx-auto flex flex-col shadow-2xl overflow-hidden bg-sky-950">
         
         <!-- Game Canvas -->
         <canvas id="gameCanvas" class="absolute inset-0 z-0"></canvas>
@@ -130,7 +136,7 @@
                     <!-- Oxygen Gauge (Swim Mode) -->
                     <div id="hud-oxygen-container" class="bg-slate-950/90 border border-cyan-400/50 px-2 py-0.5 rounded-lg flex items-center gap-1.5 hidden pointer-events-auto">
                         <i class="fa-solid fa-lungs text-cyan-400 text-xs"></i>
-                        <div class="w-16 h-2 bg-slate-800 rounded-full overflow-hidden border border-cyan-500/30">
+                        <div class="w-14 h-2 bg-slate-800 rounded-full overflow-hidden border border-cyan-500/30">
                             <div id="hud-oxygen-bar" class="w-full h-full bg-gradient-to-r from-cyan-400 to-sky-300 transition-all duration-200"></div>
                         </div>
                     </div>
@@ -146,32 +152,32 @@
             </div>
         </div>
 
-        <!-- ON-SCREEN ACTION CONTROLS (FULL D-PAD & ACTION BUTTONS) -->
-        <div id="game-controls" class="absolute bottom-3 left-0 w-full px-3 z-10 flex justify-between items-end pointer-events-none hidden">
+        <!-- ON-SCREEN ACTION CONTROLS (ELEVATED FOR MOBILE SAFE AREA) -->
+        <div id="game-controls" class="absolute bottom-0 left-0 w-full px-3 z-10 flex justify-between items-end pointer-events-none safe-bottom-padding hidden">
             <!-- Left Side: Cross D-Pad -->
-            <div id="dpad-container" class="pointer-events-auto grid grid-cols-3 gap-1 w-32 h-32 p-1 bg-slate-950/80 backdrop-blur-md rounded-2xl border border-sky-500/40 shadow-2xl">
+            <div id="dpad-container" class="pointer-events-auto grid grid-cols-3 gap-1 w-32 h-32 p-1.5 bg-slate-950/90 backdrop-blur-md rounded-2xl border border-sky-500/50 shadow-2xl">
                 <div></div>
-                <button id="btn-pad-up" class="btn-dpad text-base"><i class="fa-solid fa-caret-up"></i></button>
+                <button id="btn-pad-up" class="btn-dpad text-lg"><i class="fa-solid fa-caret-up"></i></button>
                 <div></div>
                 
-                <button id="btn-pad-left" class="btn-dpad text-base"><i class="fa-solid fa-caret-left"></i></button>
+                <button id="btn-pad-left" class="btn-dpad text-lg"><i class="fa-solid fa-caret-left"></i></button>
                 <div class="flex items-center justify-center text-sky-400 text-xs font-bold"><i class="fa-solid fa-compass"></i></div>
-                <button id="btn-pad-right" class="btn-dpad text-base"><i class="fa-solid fa-caret-right"></i></button>
+                <button id="btn-pad-right" class="btn-dpad text-lg"><i class="fa-solid fa-caret-right"></i></button>
 
                 <div></div>
-                <button id="btn-pad-down" class="btn-dpad text-base"><i class="fa-solid fa-caret-down"></i></button>
+                <button id="btn-pad-down" class="btn-dpad text-lg"><i class="fa-solid fa-caret-down"></i></button>
                 <div></div>
             </div>
 
             <!-- Right Side: Action Buttons -->
-            <div class="pointer-events-auto flex items-end gap-2">
-                <button id="btn-boost" class="w-12 h-12 bg-amber-500/90 hover:bg-amber-400 active:scale-95 border-2 border-yellow-200 rounded-full text-slate-950 font-retro text-[9px] flex flex-col items-center justify-center shadow-xl">
-                    <i class="fa-solid fa-bolt text-sm"></i> BOOST
+            <div class="pointer-events-auto flex items-end gap-2 pb-1">
+                <button id="btn-boost" class="w-11 h-11 bg-amber-500/90 hover:bg-amber-400 active:scale-95 border-2 border-yellow-200 rounded-full text-slate-950 font-retro text-[9px] flex flex-col items-center justify-center shadow-xl">
+                    <i class="fa-solid fa-bolt text-xs"></i> BOOST
                 </button>
-                <button id="btn-mode-toggle" class="w-12 h-12 bg-cyan-600/90 hover:bg-cyan-500 active:scale-95 border-2 border-cyan-200 rounded-full text-white font-bold flex flex-col items-center justify-center text-[9px] shadow-xl">
-                    <i id="btn-toggle-icon" class="fa-solid fa-person-swimming text-sm"></i> DIVE
+                <button id="btn-mode-toggle" class="w-11 h-11 bg-cyan-600/90 hover:bg-cyan-500 active:scale-95 border-2 border-cyan-200 rounded-full text-white font-bold flex flex-col items-center justify-center text-[9px] shadow-xl">
+                    <i id="btn-toggle-icon" class="fa-solid fa-person-swimming text-xs"></i> DIVE
                 </button>
-                <button id="btn-action-main" class="px-4 py-3 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 active:scale-95 border-2 border-yellow-200 rounded-2xl text-slate-950 font-retro text-xs font-black flex items-center gap-2 shadow-2xl">
+                <button id="btn-action-main" class="px-3.5 py-3 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 active:scale-95 border-2 border-yellow-200 rounded-2xl text-slate-950 font-retro text-xs font-black flex items-center gap-1.5 shadow-2xl">
                     <i id="btn-action-icon" class="fa-solid fa-anchor"></i> <span id="btn-action-text">CAST</span>
                 </button>
             </div>
@@ -226,7 +232,7 @@
                 </button>
 
                 <button id="btn-open-app-kit" class="flex items-center gap-1 text-amber-300 hover:text-amber-200 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-xl text-xs font-bold transition">
-                    <i class="fa-solid fa-shield-halved text-amber-400"></i> Play Store & Legal
+                    <i class="fa-solid fa-code text-amber-400"></i> Play Store & Code
                 </button>
             </div>
         </div>
@@ -472,32 +478,35 @@
             </div>
         </div>
 
-        <!-- PLAY STORE & LEGAL KIT MODAL -->
+        <!-- PLAY STORE, CODE & LEGAL KIT MODAL -->
         <div id="modal-app-kit" class="absolute inset-0 z-50 bg-slate-950/98 backdrop-blur-lg p-5 flex flex-col justify-between hidden">
             <div>
                 <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 mb-3">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-mobile-screen-button text-cyan-400 text-lg"></i>
-                        <h2 class="text-base font-black text-white">PLAY STORE & LEGAL KIT</h2>
+                        <i class="fa-solid fa-code text-cyan-400 text-lg"></i>
+                        <h2 class="text-base font-black text-white">PLAY STORE & CODE DRAWER</h2>
                     </div>
                     <button id="btn-close-app-kit" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
-                <div class="flex bg-slate-900 p-1 rounded-xl mb-3 gap-1 border border-slate-800">
-                    <button id="tab-store-btn" class="flex-1 py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950">Store Copy</button>
-                    <button id="tab-webintoapp-btn" class="flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white">WebIntoApp</button>
-                    <button id="tab-privacy-btn" class="flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white">Privacy Policy</button>
+                <!-- Tab Navigation Bar -->
+                <div class="grid grid-cols-4 bg-slate-900 p-1 rounded-xl mb-3 gap-1 border border-slate-800 text-center">
+                    <button id="tab-store-btn" class="py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950">Store</button>
+                    <button id="tab-code-btn" class="py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white">Copy Code</button>
+                    <button id="tab-webintoapp-btn" class="py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white">WebIntoApp</button>
+                    <button id="tab-privacy-btn" class="py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white">Privacy</button>
                 </div>
 
+                <!-- Store Copy Tab -->
                 <div id="tab-store-content" class="max-h-[48vh] overflow-y-auto space-y-2 text-xs pr-1">
                     <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex justify-between items-center">
                         <div>
                             <div class="text-[9px] font-retro text-amber-400">APP NAME</div>
                             <div class="font-bold text-white text-xs">Fishing Titans: Ocean Quest</div>
                         </div>
-                        <button onclick="copyText('Fishing Titans: Ocean Quest')" class="px-2 py-0.5 bg-slate-800 text-amber-300 rounded text-[10px]">Copy</button>
+                        <button onclick="copyToClipboard('Fishing Titans: Ocean Quest')" class="px-2 py-0.5 bg-slate-800 text-amber-300 rounded text-[10px] hover:bg-slate-700">Copy</button>
                     </div>
                     
                     <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex justify-between items-center">
@@ -505,7 +514,7 @@
                             <div class="text-[9px] font-retro text-amber-400">PACKAGE ID</div>
                             <div class="font-mono text-cyan-300 text-[11px]">com.apexmobilitysystem.fishingtitans</div>
                         </div>
-                        <button onclick="copyText('com.apexmobilitysystem.fishingtitans')" class="px-2 py-0.5 bg-slate-800 text-amber-300 rounded text-[10px]">Copy</button>
+                        <button onclick="copyToClipboard('com.apexmobilitysystem.fishingtitans')" class="px-2 py-0.5 bg-slate-800 text-amber-300 rounded text-[10px] hover:bg-slate-700">Copy</button>
                     </div>
 
                     <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl">
@@ -531,6 +540,21 @@
                     </div>
                 </div>
 
+                <!-- COPY INDEX.HTML CODE TAB -->
+                <div id="tab-code-content" class="max-h-[48vh] overflow-y-auto space-y-2 text-xs pr-1 hidden">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="text-[10px] font-retro text-cyan-400">SOURCE CODE (index.html)</span>
+                            <button id="btn-copy-full-code" class="px-3 py-1 bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-bold rounded-lg text-xs shadow active:scale-95 transition">
+                                <i class="fa-solid fa-copy mr-1"></i> Copy Full index.html Code
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-2">Click the button above to copy the complete HTML5 source code ready to paste into GitHub Pages or WebIntoApp.</p>
+                        <textarea id="code-preview-box" class="w-full h-40 bg-slate-950 text-emerald-400 font-mono text-[9px] p-2 rounded-lg border border-slate-800 resize-none outline-none" readonly></textarea>
+                    </div>
+                </div>
+
+                <!-- WebIntoApp Tab -->
                 <div id="tab-webintoapp-content" class="max-h-[48vh] overflow-y-auto space-y-2 text-xs pr-1 hidden">
                     <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
                         <h4 class="font-bold text-amber-400 mb-1 text-xs"><i class="fa-solid fa-sliders mr-1"></i> WebIntoApp Setup Notes</h4>
@@ -544,6 +568,7 @@
                     </div>
                 </div>
 
+                <!-- Privacy Policy Tab -->
                 <div id="tab-privacy-content" class="max-h-[48vh] overflow-y-auto space-y-2 text-xs pr-1 hidden">
                     <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
                         <h4 class="font-bold text-white mb-1 text-xs">Privacy Policy & Terms of Service</h4>
@@ -749,12 +774,12 @@
                     quests: { catches: 0, goldenCatches: 0, cratesOpened: 0, levelsWon: 0 }
                 };
                 try {
-                    const saved = localStorage.getItem('FISHING_TITANS_APEX_DATA_V2');
+                    const saved = localStorage.getItem('FISHING_TITANS_APEX_DATA_V3');
                     return saved ? { ...def, ...JSON.parse(saved) } : def;
                 } catch(e) { return def; }
             },
             save: (data) => {
-                try { localStorage.setItem('FISHING_TITANS_APEX_DATA_V2', JSON.stringify(data)); } catch(e) {}
+                try { localStorage.setItem('FISHING_TITANS_APEX_DATA_V3', JSON.stringify(data)); } catch(e) {}
             }
         };
 
@@ -801,7 +826,7 @@
         let hook = {
             x: 0, y: 0, angle: 0, angleSpeed: 0.035, maxAngle: Math.PI / 2.5,
             length: 28, maxLength: 0, state: 'SWING', baseSpeed: 4.8, speed: 4.8,
-            caughtEntity: null, radius: 12
+            caughtEntity: null, radius: 14
         };
 
         // Diver State
@@ -843,7 +868,7 @@
         // --- FISH & CRATE ENTITIES ---
         class FishEntity {
             constructor(type, yMin, yMax) {
-                this.type = type; // 'reef', 'angel', 'turtle', 'golden', 'titan', 'jelly', 'crate', 'coin'
+                this.type = type;
                 this.x = Math.random() > 0.5 ? -40 : width + 40;
                 this.direction = this.x < 0 ? 1 : -1;
                 this.y = yMin + Math.random() * (yMax - yMin);
@@ -953,10 +978,10 @@
             hook.y = boat.y + 25;
             hook.angle = 0;
             hook.length = 25;
-            hook.maxLength = height * 0.90;
+            hook.maxLength = height * 0.85;
             hook.state = 'SWING';
             hook.caughtEntity = null;
-            hook.radius = 12 + (gameStateData.hookLvl * 3);
+            hook.radius = 14 + (gameStateData.hookLvl * 3);
 
             diver.state = 'IN_BOAT';
             diver.x = boat.x;
@@ -1006,7 +1031,7 @@
 
         function spawnRandomFish() {
             const yMin = height * 0.38;
-            const yMax = height * 0.88;
+            const yMax = height * 0.82;
             const rand = Math.random();
             let type = 'reef';
 
@@ -1033,14 +1058,14 @@
                 modeIcon.className = "fa-solid fa-ship mr-1";
                 btnText.innerText = "CAST";
                 btnIcon.className = "fa-solid fa-anchor";
-                btnToggleIcon.className = "fa-solid fa-person-swimming text-sm";
+                btnToggleIcon.className = "fa-solid fa-person-swimming text-xs";
                 oxygenContainer.classList.add('hidden');
             } else {
                 modeText.innerText = "SWIM MODE";
                 modeIcon.className = "fa-solid fa-person-swimming mr-1";
                 btnText.innerText = "GRAB";
-                btnIcon.className = "fa-solid fa-hand text-sm";
-                btnToggleIcon.className = "fa-solid fa-ship text-sm";
+                btnIcon.className = "fa-solid fa-hand text-xs";
+                btnToggleIcon.className = "fa-solid fa-ship text-xs";
                 oxygenContainer.classList.remove('hidden');
             }
         }
@@ -1056,7 +1081,6 @@
                 diver.vy = -5.0; // Jump arc upwards out of boat
                 sound.playSplash();
             } else {
-                // Board boat if near or force return to boat
                 mode = 'BOAT';
                 diver.state = 'IN_BOAT';
                 diver.x = boat.x;
@@ -1076,20 +1100,19 @@
                     hook.speed += 1.8;
                 }
             } else {
-                // Swim boost & grab
                 diver.isBoosting = true;
                 sound.playCast();
                 setTimeout(() => diver.isBoosting = false, 350);
             }
         }
 
-        // --- KEYBOARD & ON-SCREEN D-PAD CONTROLS ---
+        // --- KEYBOARD & ON-SCREEN CONTROLS ---
         window.addEventListener('keydown', (e) => {
             if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
             if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
             if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = true;
             if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = true;
-            if (e.code === 'Space') { e.preventDefault(); triggerMainAction(); }
+            if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); triggerMainAction(); }
             if (e.code === 'KeyE' || e.code === 'ShiftLeft') toggleMode();
             if (e.code === 'KeyF' || e.code === 'KeyB') {
                 diver.isBoosting = true;
@@ -1104,7 +1127,6 @@
             if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = false;
         });
 
-        // Touch & Mouse D-Pad Listener Bindings
         function setupDPadButton(id, keyName) {
             const el = document.getElementById(id);
             const startHandler = (e) => {
@@ -1148,7 +1170,7 @@
         function updateGame() {
             if (!isPlaying || isPaused) return;
 
-            // BOAT MOVEMENT (Left / Right D-Pad or Arrow Keys)
+            // BOAT MOVEMENT (Left / Right)
             if (mode === 'BOAT' || diver.state === 'IN_BOAT') {
                 if (keys.left) boat.x -= boat.speed;
                 if (keys.right) boat.x += boat.speed;
@@ -1162,6 +1184,8 @@
                     if (Math.abs(hook.angle) > hook.maxAngle) hook.angleSpeed *= -1;
                     hook.x = boat.x + Math.sin(hook.angle) * hook.length;
                     hook.y = boat.y + 20 + Math.cos(hook.angle) * hook.length;
+
+                    if (keys.down) triggerMainAction();
                 } else if (hook.state === 'CAST') {
                     hook.length += hook.baseSpeed * 1.5;
                     hook.x = boat.x + Math.sin(hook.angle) * hook.length;
@@ -1204,7 +1228,7 @@
                 }
             }
 
-            // DIVER SWIM MECHANICS (4-Directional D-Pad Swim)
+            // DIVER SWIM MECHANICS (4-Directional D-Pad)
             if (mode === 'SWIM') {
                 if (diver.state === 'JUMPING') {
                     diver.x += diver.vx;
@@ -1218,7 +1242,6 @@
                     let swimSpeed = 3.0 + (gameStateData.finsLvl * 0.7);
                     if (diver.isBoosting) swimSpeed *= 1.8;
 
-                    // 4-Directional Movement from Keys & On-Screen D-Pad
                     if (keys.left) diver.vx = -swimSpeed;
                     else if (keys.right) diver.vx = swimSpeed;
                     else diver.vx *= 0.82;
@@ -1230,22 +1253,17 @@
                     diver.x += diver.vx;
                     diver.y += diver.vy;
 
-                    // Bounds & Water surface
                     diver.x = Math.max(15, Math.min(width - 15, diver.x));
                     diver.y = Math.max(height * 0.28, Math.min(height - 25, diver.y));
 
-                    // Oxygen Depletion / Recovery
                     if (diver.y > height * 0.32) {
                         diver.oxygen = Math.max(0, diver.oxygen - 0.08);
                         if (diver.oxygen <= 0) {
-                            // Out of air -> push to surface
                             diver.vy = -4.0;
                             sound.playHazard();
                         }
                     } else {
-                        // Surface / Air Recovery
                         diver.oxygen = Math.min(diver.maxOxygen, diver.oxygen + 1.2);
-                        // Near boat check -> auto-board
                         if (Math.abs(diver.x - boat.x) < 35) {
                             mode = 'BOAT';
                             diver.state = 'IN_BOAT';
@@ -1255,7 +1273,6 @@
                     const oxyPct = (diver.oxygen / diver.maxOxygen) * 100;
                     document.getElementById('hud-oxygen-bar').style.width = `${oxyPct}%`;
 
-                    // Direct Swim Catch & Collect Collision
                     for (let i = entities.length - 1; i >= 0; i--) {
                         let ent = entities[i];
                         let dist = Math.hypot(diver.x - ent.x, diver.y - ent.y);
@@ -1454,7 +1471,7 @@
             requestAnimationFrame(render);
         }
 
-        // --- SETUP MODALS & UI HANDLERS ---
+        // --- SETUP MODALS & CODE COPY HANDLERS ---
         function setupUI() {
             initClouds();
 
@@ -1538,38 +1555,62 @@
             document.getElementById('btn-close-biomes').addEventListener('click', () => document.getElementById('modal-biomes').classList.add('hidden'));
             document.getElementById('btn-back-biomes').addEventListener('click', () => document.getElementById('modal-biomes').classList.add('hidden'));
 
-            // App Kit Modal
+            // App Kit & Code Drawer Modal
             document.getElementById('btn-open-app-kit').addEventListener('click', () => {
-                sound.playCoin(); document.getElementById('modal-app-kit').classList.remove('hidden');
+                sound.playCoin();
+                // Populate Source Code Preview Box
+                const previewBox = document.getElementById('code-preview-box');
+                previewBox.value = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+                document.getElementById('modal-app-kit').classList.remove('hidden');
             });
             document.getElementById('btn-close-app-kit').addEventListener('click', () => document.getElementById('modal-app-kit').classList.add('hidden'));
             document.getElementById('btn-back-app-kit').addEventListener('click', () => document.getElementById('modal-app-kit').classList.add('hidden'));
 
+            // Copy Full Code Button Handler
+            document.getElementById('btn-copy-full-code').addEventListener('click', () => {
+                const previewBox = document.getElementById('code-preview-box');
+                copyToClipboard(previewBox.value);
+                const btn = document.getElementById('btn-copy-full-code');
+                const origText = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> COPIED!';
+                setTimeout(() => btn.innerHTML = origText, 2000);
+            });
+
             // App Kit Tabs
             const tabStoreBtn = document.getElementById('tab-store-btn');
+            const tabCodeBtn = document.getElementById('tab-code-btn');
             const tabWebintoappBtn = document.getElementById('tab-webintoapp-btn');
             const tabPrivacyBtn = document.getElementById('tab-privacy-btn');
+            
             const tabStoreContent = document.getElementById('tab-store-content');
+            const tabCodeContent = document.getElementById('tab-code-content');
             const tabWebintoappContent = document.getElementById('tab-webintoapp-content');
             const tabPrivacyContent = document.getElementById('tab-privacy-content');
 
+            function resetTabs() {
+                [tabStoreBtn, tabCodeBtn, tabWebintoappBtn, tabPrivacyBtn].forEach(b => b.className = "py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white");
+                [tabStoreContent, tabCodeContent, tabWebintoappContent, tabPrivacyContent].forEach(c => c.classList.add('hidden'));
+            }
+
             tabStoreBtn.addEventListener('click', () => {
-                tabStoreBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950";
-                tabWebintoappBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabPrivacyBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabStoreContent.classList.remove('hidden'); tabWebintoappContent.classList.add('hidden'); tabPrivacyContent.classList.add('hidden');
+                resetTabs();
+                tabStoreBtn.className = "py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950";
+                tabStoreContent.classList.remove('hidden');
+            });
+            tabCodeBtn.addEventListener('click', () => {
+                resetTabs();
+                tabCodeBtn.className = "py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950";
+                tabCodeContent.classList.remove('hidden');
             });
             tabWebintoappBtn.addEventListener('click', () => {
-                tabWebintoappBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950";
-                tabStoreBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabPrivacyBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabWebintoappContent.classList.remove('hidden'); tabStoreContent.classList.add('hidden'); tabPrivacyContent.classList.add('hidden');
+                resetTabs();
+                tabWebintoappBtn.className = "py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950";
+                tabWebintoappContent.classList.remove('hidden');
             });
             tabPrivacyBtn.addEventListener('click', () => {
-                tabPrivacyBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950";
-                tabStoreBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabWebintoappBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabPrivacyContent.classList.remove('hidden'); tabStoreContent.classList.add('hidden'); tabPrivacyContent.classList.add('hidden');
+                resetTabs();
+                tabPrivacyBtn.className = "py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950";
+                tabPrivacyContent.classList.remove('hidden');
             });
 
             // Results Navigation
@@ -1579,10 +1620,12 @@
             requestAnimationFrame(render);
         }
 
-        function copyText(str) {
+        function copyToClipboard(str) {
             const el = document.createElement('textarea');
-            el.value = str; document.body.appendChild(el);
-            el.select(); document.execCommand('copy');
+            el.value = str;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
             document.body.removeChild(el);
         }
 
