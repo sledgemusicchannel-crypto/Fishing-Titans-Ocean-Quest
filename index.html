@@ -74,7 +74,6 @@
             border-color: #facc15;
             transform: scale(0.92);
         }
-        /* Mobile Safe Area Padding */
         .safe-bottom-padding {
             padding-bottom: max(0.85rem, env(safe-area-inset-bottom));
         }
@@ -83,12 +82,12 @@
 <body class="flex justify-center items-center h-[100dvh] w-screen overflow-hidden text-white bg-slate-950">
 
     <!-- MAIN GAME CONTAINER -->
-    <div id="game-container" class="relative w-full h-[100dvh] max-w-md md:max-w-xl lg:max-w-3xl mx-auto flex flex-col shadow-2xl overflow-hidden bg-sky-950">
+    <div id="game-container" class="relative w-full h-[100dvh] max-w-md md:max-w-2xl lg:max-w-4xl mx-auto flex flex-col shadow-2xl overflow-hidden bg-sky-950">
         
         <!-- Game Canvas -->
         <canvas id="gameCanvas" class="absolute inset-0 z-0"></canvas>
 
-        <!-- TOP HUD BAR (PINNED TO TOP EDGE - ZERO OVERLAP WITH ANGLER) -->
+        <!-- TOP HUD BAR (PINNED TO TOP EDGE - ZERO OVERLAP) -->
         <div id="hud" class="absolute top-0 left-0 w-full z-10 pt-2 px-3 pb-1 flex flex-col gap-1.5 pointer-events-none hidden">
             <div class="flex justify-between items-center bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-sky-500/40 shadow-xl pointer-events-auto">
                 <!-- Level Badge & Biome -->
@@ -103,7 +102,7 @@
                     <div class="text-base md:text-xl font-retro font-extrabold text-white glow-cyan"><span id="hud-level-points">0</span></div>
                 </div>
 
-                <!-- Timer & Sound Controls -->
+                <!-- Timer & Controls -->
                 <div class="flex items-center gap-2">
                     <div class="bg-rose-950/90 border border-rose-500/50 px-2 py-0.5 rounded-lg flex items-center gap-1">
                         <i class="fa-solid fa-stopwatch text-rose-400 text-xs animate-pulse"></i>
@@ -193,14 +192,14 @@
                 <h1 class="text-2xl md:text-3xl font-retro font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-200 to-yellow-400 glow-mario leading-snug">
                     FISHING TITANS
                 </h1>
-                <p class="text-[11px] font-retro text-cyan-300 tracking-wider mt-1">OCEAN QUEST: RESCUE THE PRINCESS</p>
+                <p class="text-[11px] font-retro text-cyan-300 tracking-wider mt-1">OCEAN QUEST: RESCUE PRINCESS MARINA</p>
             </div>
 
             <!-- Storyline Banner -->
             <div class="bg-gradient-to-r from-amber-500/20 via-sky-500/20 to-purple-500/20 border border-amber-500/40 p-3 rounded-2xl my-auto text-center max-w-xs mx-auto">
-                <p class="text-xs text-amber-200 font-bold mb-1"><i class="fa-solid fa-crown text-amber-400 mr-1"></i> Rescue Princess Marina</p>
+                <p class="text-xs text-amber-200 font-bold mb-1"><i class="fa-solid fa-crown text-amber-400 mr-1"></i> Smooth 2D Scrolling World!</p>
                 <p class="text-[11px] text-slate-300 leading-tight">
-                    Drive your boat, cast your line, or <span class="text-cyan-300 font-bold">jump out to swim underwater</span> with D-Pad controls to collect coins, open Mario '?' crates, and save the princess from the deep Titan Trench!
+                    Drive your boat across the ocean or <span class="text-cyan-300 font-bold">jump into the water to swim in 4 directions</span>! The camera follows your diver smoothly across deep underwater environments, sunken ruins, and titan caverns to save Princess Marina!
                 </p>
             </div>
 
@@ -527,9 +526,10 @@
                         <p class="text-slate-300 text-[10px] leading-relaxed whitespace-pre-line">
                             Welcome to Fishing Titans: Ocean Quest by Apex Mobility System!
 
-                            Drive your fishing boat across surface waves or jump directly into the sea to swim underwater using responsive on-screen D-Pad controls. Catch fish, open Mario-style '?' mystery crates, and battle deep-sea hazards across 5 ocean biomes to rescue Princess Marina!
+                            Drive your fishing boat across surface waves or jump directly into the sea to swim underwater using responsive on-screen D-Pad controls. The camera tracks your diver across 2400px wide ocean levels and deep underwater trenches! Catch fish, open Mario-style '?' mystery crates, and battle deep-sea hazards across 5 ocean biomes to rescue Princess Marina!
 
                             FEATURES:
+                            • Smooth 2D Scrolling Camera & World Exploration in both Boat & Swim modes!
                             • Responsive On-Screen Touch D-Pad + Full Keyboard Controls (WASD / Arrows + Space / E / F).
                             • Dual Boat & Swim Gameplay: Drive your boat & cast hook OR jump into the water to swim in 4 directions!
                             • Mario '?' Mystery Crates: Fever Frenzy, Time Freezes, and Coin Showers.
@@ -774,12 +774,12 @@
                     quests: { catches: 0, goldenCatches: 0, cratesOpened: 0, levelsWon: 0 }
                 };
                 try {
-                    const saved = localStorage.getItem('FISHING_TITANS_APEX_DATA_V3');
+                    const saved = localStorage.getItem('FISHING_TITANS_APEX_DATA_V4');
                     return saved ? { ...def, ...JSON.parse(saved) } : def;
                 } catch(e) { return def; }
             },
             save: (data) => {
-                try { localStorage.setItem('FISHING_TITANS_APEX_DATA_V3', JSON.stringify(data)); } catch(e) {}
+                try { localStorage.setItem('FISHING_TITANS_APEX_DATA_V4', JSON.stringify(data)); } catch(e) {}
             }
         };
 
@@ -790,6 +790,14 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         let width = 0, height = 0, dpr = 1;
+
+        // 2D WORLD MAP DIMENSIONS (Large Side-Scrolling & Depth Level)
+        const WORLD_WIDTH = 2600;
+        const WORLD_HEIGHT = 1600;
+        const WATER_SURFACE_Y = 320;
+
+        // CAMERA SYSTEM
+        let camera = { x: 0, y: 0 };
 
         function resizeCanvas() {
             const container = document.getElementById('game-container');
@@ -819,26 +827,32 @@
 
         // Boat State
         let boat = {
-            x: 0, y: 0, width: 84, height: 32, speed: 3.5, waveOffset: 0
+            x: 400, y: WATER_SURFACE_Y - 15, width: 90, height: 34, speed: 4.2, waveOffset: 0
         };
 
         // Hook State
         let hook = {
             x: 0, y: 0, angle: 0, angleSpeed: 0.035, maxAngle: Math.PI / 2.5,
-            length: 28, maxLength: 0, state: 'SWING', baseSpeed: 4.8, speed: 4.8,
+            length: 28, maxLength: WORLD_HEIGHT - 120, state: 'SWING', baseSpeed: 5.5, speed: 5.5,
             caughtEntity: null, radius: 14
         };
 
-        // Diver State
+        // Diver State (2D Swimming Physics)
         let diver = {
-            x: 0, y: 0, vx: 0, vy: 0, state: 'IN_BOAT', // 'IN_BOAT', 'JUMPING', 'SWIMMING'
+            x: 400, y: WATER_SURFACE_Y - 20, vx: 0, vy: 0, state: 'IN_BOAT', // 'IN_BOAT', 'JUMPING', 'SWIMMING'
             size: 14, oxygen: 100, maxOxygen: 100, isBoosting: false
+        };
+
+        // Princess Marina NPC
+        let princess = {
+            x: WORLD_WIDTH - 250, y: WORLD_HEIGHT - 250, rescued: false
         };
 
         let entities = [];
         let particles = [];
         let floatingTexts = [];
         let clouds = [];
+        let sunkenPillars = [];
 
         // 5D Biome Specs
         const BIOMES = [
@@ -867,37 +881,37 @@
 
         // --- FISH & CRATE ENTITIES ---
         class FishEntity {
-            constructor(type, yMin, yMax) {
+            constructor(type, customX, customY) {
                 this.type = type;
-                this.x = Math.random() > 0.5 ? -40 : width + 40;
-                this.direction = this.x < 0 ? 1 : -1;
-                this.y = yMin + Math.random() * (yMax - yMin);
+                this.x = customX !== undefined ? customX : Math.random() * WORLD_WIDTH;
+                this.y = customY !== undefined ? customY : WATER_SURFACE_Y + 60 + Math.random() * (WORLD_HEIGHT - WATER_SURFACE_Y - 200);
+                this.direction = Math.random() > 0.5 ? 1 : -1;
 
                 if (type === 'reef') {
-                    this.width = 30; this.height = 18; this.speed = (1.5 + Math.random() * 1.5) * this.direction;
+                    this.width = 32; this.height = 20; this.speed = (1.5 + Math.random() * 1.5) * this.direction;
                     this.points = 30; this.weight = 1.0; this.color = '#f97316';
                 } else if (type === 'angel') {
-                    this.width = 38; this.height = 32; this.speed = (1.2 + Math.random() * 1.2) * this.direction;
+                    this.width = 40; this.height = 34; this.speed = (1.2 + Math.random() * 1.2) * this.direction;
                     this.points = 60; this.weight = 1.1; this.color = '#38bdf8';
                 } else if (type === 'turtle') {
-                    this.width = 46; this.height = 28; this.speed = (0.8 + Math.random() * 0.8) * this.direction;
+                    this.width = 48; this.height = 30; this.speed = (0.8 + Math.random() * 0.8) * this.direction;
                     this.points = 100; this.weight = 2.0; this.color = '#22c55e';
                 } else if (type === 'golden') {
-                    this.width = 34; this.height = 22; this.speed = (2.5 + Math.random() * 1.8) * this.direction;
+                    this.width = 36; this.height = 24; this.speed = (2.5 + Math.random() * 1.8) * this.direction;
                     this.points = 180; this.weight = 1.0; this.color = '#facc15';
                 } else if (type === 'titan') {
-                    this.width = 64; this.height = 42; this.speed = (1.0 + Math.random() * 1.2) * this.direction;
-                    this.points = 300; this.weight = 3.0; this.color = '#a855f7';
+                    this.width = 76; this.height = 48; this.speed = (1.0 + Math.random() * 1.2) * this.direction;
+                    this.points = 350; this.weight = 3.5; this.color = '#a855f7';
                 } else if (type === 'jelly') {
-                    this.width = 32; this.height = 36; this.speed = 0;
+                    this.width = 34; this.height = 38; this.speed = 0;
                     this.vy = (0.6 + Math.random() * 0.8) * (Math.random() > 0.5 ? 1 : -1);
                     this.points = -50; this.weight = 1.5; this.color = '#f43f5e';
-                    this.yMinLimit = yMin; this.yMaxLimit = yMax;
+                    this.yMinLimit = this.y - 80; this.yMaxLimit = this.y + 80;
                 } else if (type === 'crate') {
-                    this.width = 28; this.height = 28; this.speed = (0.7 + Math.random() * 0.5) * this.direction;
+                    this.width = 30; this.height = 30; this.speed = (0.4 + Math.random() * 0.4) * this.direction;
                     this.points = 150; this.weight = 1.2; this.color = '#eab308';
                 } else if (type === 'coin') {
-                    this.width = 18; this.height = 18; this.speed = (1.0 + Math.random() * 1.0) * this.direction;
+                    this.width = 20; this.height = 20; this.speed = (0.8 + Math.random() * 0.6) * this.direction;
                     this.points = 40; this.weight = 0.5; this.color = '#facc15';
                 }
             }
@@ -908,57 +922,70 @@
                     if (this.y < this.yMinLimit || this.y > this.yMaxLimit) this.vy *= -1;
                 } else {
                     this.x += this.speed;
+                    if (this.x < 50 || this.x > WORLD_WIDTH - 50) this.speed *= -1;
                 }
             }
 
             draw() {
                 ctx.save();
-                ctx.translate(this.x, this.y);
+                ctx.translate(this.x - camera.x, this.y - camera.y);
                 if (this.direction === -1 && this.type !== 'jelly' && this.type !== 'crate' && this.type !== 'coin') ctx.scale(-1, 1);
 
                 if (this.type === 'crate') {
                     ctx.shadowColor = '#eab308'; ctx.shadowBlur = 10;
-                    ctx.fillStyle = '#eab308'; ctx.fillRect(-14, -14, 28, 28);
-                    ctx.strokeStyle = '#854d0e'; ctx.lineWidth = 3; ctx.strokeRect(-14, -14, 28, 28);
+                    ctx.fillStyle = '#eab308'; ctx.fillRect(-15, -15, 30, 30);
+                    ctx.strokeStyle = '#854d0e'; ctx.lineWidth = 3; ctx.strokeRect(-15, -15, 30, 30);
                     ctx.fillStyle = '#ffffff'; ctx.font = '900 14px "Press Start 2P", monospace';
                     ctx.fillText('?', -5, 5);
                 } else if (this.type === 'coin') {
                     ctx.shadowColor = '#facc15'; ctx.shadowBlur = 8;
-                    ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
                     ctx.strokeStyle = '#ca8a04'; ctx.lineWidth = 2; ctx.stroke();
                     ctx.fillStyle = '#854d0e'; ctx.font = '900 10px "Press Start 2P", monospace';
                     ctx.fillText('$', -3, 3);
                 } else if (this.type === 'reef') {
-                    ctx.fillStyle = this.color; ctx.beginPath(); ctx.ellipse(0, 0, 15, 9, 0, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(-18, -6); ctx.lineTo(-18, 6); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = this.color; ctx.beginPath(); ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-19, -7); ctx.lineTo(-19, 7); ctx.closePath(); ctx.fill();
                     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(7, -3, 2.5, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'angel') {
-                    ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.ellipse(0, 0, 17, 18, 0, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-5, -14); ctx.lineTo(-5, 14); ctx.stroke();
+                    ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.ellipse(0, 0, 18, 19, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-5, -15); ctx.lineTo(-5, 15); ctx.stroke();
                 } else if (this.type === 'turtle') {
-                    ctx.fillStyle = '#15803d'; ctx.beginPath(); ctx.ellipse(0, 0, 18, 12, 0, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(16, 0, 5, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#15803d'; ctx.beginPath(); ctx.ellipse(0, 0, 20, 13, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(18, 0, 6, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'golden') {
-                    ctx.shadowColor = '#facc15'; ctx.shadowBlur = 12;
-                    ctx.fillStyle = '#eab308'; ctx.beginPath(); ctx.ellipse(0, 0, 17, 11, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowColor = '#facc15'; ctx.shadowBlur = 14;
+                    ctx.fillStyle = '#eab308'; ctx.beginPath(); ctx.ellipse(0, 0, 18, 12, 0, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'titan') {
-                    ctx.shadowColor = '#c084fc'; ctx.shadowBlur = 16;
-                    ctx.fillStyle = '#6b21a8'; ctx.beginPath(); ctx.ellipse(0, 0, 30, 20, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowColor = '#c084fc'; ctx.shadowBlur = 18;
+                    ctx.fillStyle = '#6b21a8'; ctx.beginPath(); ctx.ellipse(0, 0, 36, 24, 0, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'jelly') {
-                    ctx.fillStyle = 'rgba(244, 63, 94, 0.85)'; ctx.beginPath(); ctx.arc(0, -5, 15, Math.PI, 0); ctx.fill();
+                    ctx.fillStyle = 'rgba(244, 63, 94, 0.85)'; ctx.beginPath(); ctx.arc(0, -5, 16, Math.PI, 0); ctx.fill();
                     ctx.strokeStyle = '#fda4af'; ctx.lineWidth = 2;
-                    for (let i = -9; i <= 9; i += 4.5) {
+                    for (let i = -10; i <= 10; i += 5) {
                         ctx.beginPath(); ctx.moveTo(i, -5);
-                        ctx.quadraticCurveTo(i + Math.sin(Date.now() * 0.01 + i) * 4, 8, i, 18); ctx.stroke();
+                        ctx.quadraticCurveTo(i + Math.sin(Date.now() * 0.01 + i) * 4, 8, i, 20); ctx.stroke();
                     }
                 }
                 ctx.restore();
             }
         }
 
-        function initClouds() {
+        function initWorldEnvironment() {
             clouds = [];
-            for (let i = 0; i < 4; i++) clouds.push({ x: Math.random() * width, y: 8 + Math.random() * 22, size: 18 + Math.random() * 16, speed: 0.2 + Math.random() * 0.25 });
+            for (let i = 0; i < 18; i++) {
+                clouds.push({ x: Math.random() * WORLD_WIDTH, y: 15 + Math.random() * 80, size: 24 + Math.random() * 26, speed: 0.2 + Math.random() * 0.25 });
+            }
+
+            sunkenPillars = [];
+            for (let i = 0; i < 14; i++) {
+                sunkenPillars.push({
+                    x: 180 + i * 180 + Math.random() * 40,
+                    y: WATER_SURFACE_Y + 150 + Math.random() * (WORLD_HEIGHT - WATER_SURFACE_Y - 300),
+                    width: 35 + Math.random() * 20,
+                    height: 120 + Math.random() * 180
+                });
+            }
         }
 
         function startNewLevel(lvl) {
@@ -967,36 +994,48 @@
 
             targetPoints = 180 + (lvl * 60);
             levelPoints = 0;
-            timeLeft = 60 - Math.min(lvl * 2, 20);
+            timeLeft = 65 - Math.min(lvl * 2, 20);
             comboCount = 0;
 
-            boat.x = width / 2;
-            boat.y = height * 0.28;
-            boat.speed = 3.5 + (gameStateData.boatLvl * 0.7);
+            boat.x = 400;
+            boat.y = WATER_SURFACE_Y - 15;
+            boat.speed = 4.0 + (gameStateData.boatLvl * 0.7);
 
             hook.x = boat.x;
             hook.y = boat.y + 25;
             hook.angle = 0;
             hook.length = 25;
-            hook.maxLength = height * 0.85;
+            hook.maxLength = WORLD_HEIGHT - 120;
             hook.state = 'SWING';
             hook.caughtEntity = null;
             hook.radius = 14 + (gameStateData.hookLvl * 3);
 
             diver.state = 'IN_BOAT';
             diver.x = boat.x;
-            diver.y = boat.y - 10;
+            diver.y = boat.y - 12;
             diver.vx = 0; diver.vy = 0;
             diver.maxOxygen = 100 + (gameStateData.suitLvl * 25);
             diver.oxygen = diver.maxOxygen;
 
+            princess.rescued = false;
+            princess.x = WORLD_WIDTH - 250;
+            princess.y = WORLD_HEIGHT - 220;
+
             mode = 'BOAT';
+
+            camera.x = boat.x - width / 2;
+            camera.y = 0;
 
             entities = [];
             particles = [];
             floatingTexts = [];
 
-            for (let i = 0; i < 7 + Math.min(lvl, 6); i++) spawnRandomFish();
+            initWorldEnvironment();
+
+            // Populate World Entities across 2400px width & 1600px depth
+            for (let i = 0; i < 35 + Math.min(lvl * 5, 25); i++) {
+                spawnRandomFish();
+            }
 
             document.getElementById('hud-level-badge').innerText = `LVL ${lvl}`;
             document.getElementById('hud-biome-name').innerText = biome.name;
@@ -1030,19 +1069,17 @@
         }
 
         function spawnRandomFish() {
-            const yMin = height * 0.38;
-            const yMax = height * 0.82;
             const rand = Math.random();
             let type = 'reef';
 
-            if (rand < 0.12) type = 'coin';
-            else if (rand < 0.24) type = 'crate';
-            else if (rand < 0.42) type = 'jelly';
-            else if (rand < 0.65) type = currentLevel >= 4 ? 'titan' : 'golden';
-            else if (rand < 0.82) type = 'angel';
+            if (rand < 0.14) type = 'coin';
+            else if (rand < 0.28) type = 'crate';
+            else if (rand < 0.45) type = 'jelly';
+            else if (rand < 0.68) type = currentLevel >= 4 ? 'titan' : 'golden';
+            else if (rand < 0.84) type = 'angel';
             else type = 'turtle';
 
-            entities.push(new FishEntity(type, yMin, yMax));
+            entities.push(new FishEntity(type));
         }
 
         function updateModeUI() {
@@ -1077,15 +1114,22 @@
                 diver.state = 'JUMPING';
                 diver.x = boat.x;
                 diver.y = boat.y - 12;
-                diver.vx = keys.right ? 3.5 : (keys.left ? -3.5 : 1.5);
-                diver.vy = -5.0; // Jump arc upwards out of boat
+                diver.vx = keys.right ? 4.5 : (keys.left ? -4.5 : 2.0);
+                diver.vy = -6.0; // Dynamic Jump Arc
                 sound.playSplash();
             } else {
-                mode = 'BOAT';
-                diver.state = 'IN_BOAT';
-                diver.x = boat.x;
-                diver.y = boat.y - 10;
-                sound.playCast();
+                // If swimming near boat, board back on
+                if (Math.abs(diver.x - boat.x) < 80 && diver.y <= WATER_SURFACE_Y + 40) {
+                    mode = 'BOAT';
+                    diver.state = 'IN_BOAT';
+                    diver.x = boat.x;
+                    diver.y = boat.y - 12;
+                    sound.playCast();
+                } else {
+                    // Quick Boost underwater
+                    diver.isBoosting = true; sound.playCast();
+                    setTimeout(() => diver.isBoosting = false, 350);
+                }
             }
             updateModeUI();
         }
@@ -1097,7 +1141,7 @@
                     hook.state = 'CAST';
                     sound.playCast();
                 } else if (hook.state === 'REEL') {
-                    hook.speed += 1.8;
+                    hook.speed += 2.2;
                 }
             } else {
                 diver.isBoosting = true;
@@ -1166,18 +1210,37 @@
             else sound.startBGM();
         });
 
-        // --- GAME LOGIC UPDATE LOOP ---
+        // --- GAME LOGIC & SMOOTH CAMERA UPDATE ---
         function updateGame() {
             if (!isPlaying || isPaused) return;
 
-            // BOAT MOVEMENT (Left / Right)
+            // 1. BOAT MOVEMENT (Horizontal Waves)
             if (mode === 'BOAT' || diver.state === 'IN_BOAT') {
                 if (keys.left) boat.x -= boat.speed;
                 if (keys.right) boat.x += boat.speed;
-                boat.x = Math.max(45, Math.min(width - 45, boat.x));
+                boat.x = Math.max(80, Math.min(WORLD_WIDTH - 80, boat.x));
             }
 
-            // BOAT HOOK MECHANICS
+            // 2. CAMERA SCROLLING FOLLOW ENGINE
+            if (mode === 'BOAT') {
+                // Smooth Lerp Camera to Boat
+                let targetCamX = boat.x - width / 2;
+                let targetCamY = 0;
+                camera.x += (targetCamX - camera.x) * 0.1;
+                camera.y += (targetCamY - camera.y) * 0.1;
+            } else {
+                // Smooth Lerp Camera to Swimming Diver (Horizontal + Vertical Scrolling!)
+                let targetCamX = diver.x - width / 2;
+                let targetCamY = diver.y - height / 2;
+                camera.x += (targetCamX - camera.x) * 0.12;
+                camera.y += (targetCamY - camera.y) * 0.12;
+            }
+
+            // Clamp Camera Bounds inside World Bounds
+            camera.x = Math.max(0, Math.min(WORLD_WIDTH - width, camera.x));
+            camera.y = Math.max(0, Math.min(WORLD_HEIGHT - height, camera.y));
+
+            // 3. BOAT HOOK MECHANICS
             if (mode === 'BOAT') {
                 if (hook.state === 'SWING') {
                     hook.angle += hook.angleSpeed;
@@ -1187,11 +1250,11 @@
 
                     if (keys.down) triggerMainAction();
                 } else if (hook.state === 'CAST') {
-                    hook.length += hook.baseSpeed * 1.5;
+                    hook.length += hook.baseSpeed * 1.6;
                     hook.x = boat.x + Math.sin(hook.angle) * hook.length;
                     hook.y = boat.y + 20 + Math.cos(hook.angle) * hook.length;
 
-                    if (hook.y >= hook.maxLength || hook.x <= 15 || hook.x >= width - 15) hook.state = 'REEL';
+                    if (hook.y >= hook.maxLength || hook.x <= 20 || hook.x >= WORLD_WIDTH - 20) hook.state = 'REEL';
 
                     for (let i = entities.length - 1; i >= 0; i--) {
                         let ent = entities[i];
@@ -1206,7 +1269,7 @@
                         }
                     }
                 } else if (hook.state === 'REEL') {
-                    let reelMotor = 3.6 + (gameStateData.reelLvl * 0.9);
+                    let reelMotor = 4.0 + (gameStateData.reelLvl * 1.0);
                     let drag = hook.caughtEntity ? hook.caughtEntity.weight : 1.0;
                     hook.length -= (reelMotor / drag);
                     hook.x = boat.x + Math.sin(hook.angle) * hook.length;
@@ -1228,51 +1291,48 @@
                 }
             }
 
-            // DIVER SWIM MECHANICS (4-Directional D-Pad)
+            // 4. DIVER 4-WAY SWIM PHYSICS
             if (mode === 'SWIM') {
                 if (diver.state === 'JUMPING') {
                     diver.x += diver.vx;
                     diver.y += diver.vy;
-                    diver.vy += 0.35; // Gravity arc
-                    if (diver.y >= height * 0.30) {
+                    diver.vy += 0.38; // Jump gravity arc
+                    if (diver.y >= WATER_SURFACE_Y + 15) {
                         diver.state = 'SWIMMING';
                         sound.playSplash();
                     }
                 } else if (diver.state === 'SWIMMING') {
-                    let swimSpeed = 3.0 + (gameStateData.finsLvl * 0.7);
+                    let swimSpeed = 3.6 + (gameStateData.finsLvl * 0.8);
                     if (diver.isBoosting) swimSpeed *= 1.8;
 
                     if (keys.left) diver.vx = -swimSpeed;
                     else if (keys.right) diver.vx = swimSpeed;
-                    else diver.vx *= 0.82;
+                    else diver.vx *= 0.84;
 
                     if (keys.up) diver.vy = -swimSpeed;
                     else if (keys.down) diver.vy = swimSpeed;
-                    else diver.vy *= 0.82;
+                    else diver.vy *= 0.84;
 
                     diver.x += diver.vx;
                     diver.y += diver.vy;
 
-                    diver.x = Math.max(15, Math.min(width - 15, diver.x));
-                    diver.y = Math.max(height * 0.28, Math.min(height - 25, diver.y));
+                    diver.x = Math.max(20, Math.min(WORLD_WIDTH - 20, diver.x));
+                    diver.y = Math.max(WATER_SURFACE_Y - 20, Math.min(WORLD_HEIGHT - 35, diver.y));
 
-                    if (diver.y > height * 0.32) {
+                    // Oxygen depletion when underwater
+                    if (diver.y > WATER_SURFACE_Y + 10) {
                         diver.oxygen = Math.max(0, diver.oxygen - 0.08);
                         if (diver.oxygen <= 0) {
-                            diver.vy = -4.0;
+                            diver.vy = -4.5;
                             sound.playHazard();
                         }
                     } else {
-                        diver.oxygen = Math.min(diver.maxOxygen, diver.oxygen + 1.2);
-                        if (Math.abs(diver.x - boat.x) < 35) {
-                            mode = 'BOAT';
-                            diver.state = 'IN_BOAT';
-                            updateModeUI();
-                        }
+                        diver.oxygen = Math.min(diver.maxOxygen, diver.oxygen + 1.4);
                     }
                     const oxyPct = (diver.oxygen / diver.maxOxygen) * 100;
                     document.getElementById('hud-oxygen-bar').style.width = `${oxyPct}%`;
 
+                    // Collision with Entities
                     for (let i = entities.length - 1; i >= 0; i--) {
                         let ent = entities[i];
                         let dist = Math.hypot(diver.x - ent.x, diver.y - ent.y);
@@ -1286,19 +1346,28 @@
                             break;
                         }
                     }
+
+                    // Check Princess Rescue Collision
+                    if (!princess.rescued) {
+                        let distP = Math.hypot(diver.x - princess.x, diver.y - princess.y);
+                        if (distP < 45) {
+                            princess.rescued = true;
+                            sound.playVictory();
+                            levelPoints += 500;
+                            gameStateData.totalCoins += 500;
+                            floatingTexts.push({ text: 'PRINCESS RESCUED! +500', x: princess.x, y: princess.y - 30, color: '#facc15', alpha: 1.0 });
+                            setTimeout(() => endLevel(), 1800);
+                        }
+                    }
                 }
             }
 
-            // Update Entities
+            // 5. Update Entities & Respawn
             for (let i = entities.length - 1; i >= 0; i--) {
                 let ent = entities[i];
                 ent.update();
-                if (ent.x < -60 || ent.x > width + 60) {
-                    entities.splice(i, 1);
-                    spawnRandomFish();
-                }
             }
-            if (entities.length < 6) spawnRandomFish();
+            if (entities.length < 25) spawnRandomFish();
 
             // Floating Score Popups
             for (let i = floatingTexts.length - 1; i >= 0; i--) {
@@ -1314,7 +1383,7 @@
 
             if (ent.type === 'crate') {
                 gameStateData.quests.cratesOpened++;
-                pts = 150;
+                pts = 160;
                 sound.playPowerup();
                 floatingTexts.push({ text: '? MYSTERY CRATE!', x: mode === 'BOAT' ? boat.x : diver.x, y: mode === 'BOAT' ? boat.y - 20 : diver.y - 15, color: '#facc15', alpha: 1.0 });
             } else if (ent.type === 'coin') {
@@ -1360,7 +1429,7 @@
             sound.stopBGM();
             clearInterval(timerInterval);
 
-            const isWin = levelPoints >= targetPoints;
+            const isWin = levelPoints >= targetPoints || princess.rescued;
             const modal = document.getElementById('modal-level-result');
             modal.classList.remove('hidden');
 
@@ -1382,7 +1451,7 @@
             }
         }
 
-        // --- CANVAS RENDER LOOP ---
+        // --- CANVAS RENDER LOOP WITH PARALLAX & CAMERA ---
         function render() {
             ctx.save();
             if (screenShakeTime > 0) {
@@ -1393,77 +1462,110 @@
             ctx.clearRect(0, 0, width, height);
             const biome = getCurrentBiome();
 
-            // 1. Sky Gradient & Sun
-            let skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.28);
+            // 1. SKY GRADIENT & PARALLAX CLOUDS (Top surface)
+            let skyGrad = ctx.createLinearGradient(0, 0 - camera.y, 0, WATER_SURFACE_Y - camera.y);
             skyGrad.addColorStop(0, biome.skyGradient[0]);
             skyGrad.addColorStop(1, biome.skyGradient[1]);
-            ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, width, height * 0.28);
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0 - camera.y, width, WATER_SURFACE_Y);
 
+            // Sun
             ctx.fillStyle = biome.sunColor;
-            ctx.beginPath(); ctx.arc(width * 0.8, height * 0.08, 22, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath();
+            ctx.arc((WORLD_WIDTH * 0.7) - camera.x * 0.3, 100 - camera.y * 0.3, 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Parallax Clouds
             ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
             clouds.forEach(c => {
-                c.x += c.speed; if (c.x > width + 40) c.x = -40;
-                ctx.beginPath(); ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2); ctx.fill();
+                c.x += c.speed; if (c.x > WORLD_WIDTH + 50) c.x = -50;
+                ctx.beginPath();
+                ctx.arc(c.x - camera.x * 0.5, c.y - camera.y * 0.2, c.size, 0, Math.PI * 2);
+                ctx.fill();
             });
 
-            // 2. Ocean Water Gradient
-            let waterGrad = ctx.createLinearGradient(0, height * 0.28, 0, height);
+            // 2. OCEAN WATER GRADIENT
+            let waterGrad = ctx.createLinearGradient(0, WATER_SURFACE_Y - camera.y, 0, WORLD_HEIGHT - camera.y);
             waterGrad.addColorStop(0, biome.waterGradient[0]);
             waterGrad.addColorStop(1, biome.waterGradient[1]);
-            ctx.fillStyle = waterGrad; ctx.fillRect(0, height * 0.28, width, height * 0.72);
+            ctx.fillStyle = waterGrad;
+            ctx.fillRect(0, WATER_SURFACE_Y - camera.y, width, WORLD_HEIGHT - WATER_SURFACE_Y);
 
-            // Seabed
-            ctx.fillStyle = biome.seabedColor; ctx.fillRect(0, height - 16, width, 16);
+            // Sunken Temple Pillars (Midground Parallax)
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+            sunkenPillars.forEach(p => {
+                ctx.fillRect(p.x - camera.x * 0.8, p.y - camera.y, p.width, p.height);
+            });
 
-            // 3. Render Boat & Fisherman
+            // Seabed Ground
+            ctx.fillStyle = biome.seabedColor;
+            ctx.fillRect(0 - camera.x, WORLD_HEIGHT - 30 - camera.y, WORLD_WIDTH, 30);
+
+            // 3. RENDER BOAT & FISHERMAN
             boat.waveOffset = Math.sin(Date.now() * 0.003) * 4;
             let currentBoatY = boat.y + boat.waveOffset;
 
             ctx.save();
-            ctx.translate(boat.x, currentBoatY);
+            ctx.translate(boat.x - camera.x, currentBoatY - camera.y);
 
             // Fisherman (In Boat)
             if (diver.state === 'IN_BOAT') {
                 ctx.fillStyle = '#15803d'; ctx.fillRect(-10, -22, 16, 18); // Shirt
                 ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(-2, -26, 10, Math.PI, 0); ctx.fill(); // Hat
                 ctx.fillStyle = '#fde047'; ctx.fillRect(-6, -20, 10, 8); // Head
-                ctx.strokeStyle = '#eab308'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(18, -28); ctx.stroke(); // Fishing Rod
+                ctx.strokeStyle = '#eab308'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(18, -28); ctx.stroke(); // Rod
             }
 
             // Boat Hull
             ctx.fillStyle = gameStateData.boatLvl > 1 ? '#0284c7' : '#854d0e';
-            ctx.beginPath(); ctx.moveTo(-42, -4); ctx.lineTo(42, -4); ctx.lineTo(30, 18); ctx.lineTo(-30, 18); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(-45, -4); ctx.lineTo(45, -4); ctx.lineTo(32, 20); ctx.lineTo(-32, 20); ctx.closePath(); ctx.fill();
             ctx.restore();
 
-            // 4. Render Diver Swimming Character
+            // 4. RENDER DIVER SWIMMING CHARACTER
             if (diver.state === 'JUMPING' || diver.state === 'SWIMMING') {
                 ctx.save();
-                ctx.translate(diver.x, diver.y);
-                ctx.fillStyle = '#0ea5e9'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(4, -2, 4, 0, Math.PI * 2); ctx.fill(); // Scuba Mask
+                ctx.translate(diver.x - camera.x, diver.y - camera.y);
+                ctx.fillStyle = '#0ea5e9'; ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(4, -2, 4, 0, Math.PI * 2); ctx.fill(); // Mask
                 if (gameStateData.finsLvl > 1) {
-                    ctx.fillStyle = '#facc15'; ctx.fillRect(-14, -4, 8, 8); // Hydro Fins
+                    ctx.fillStyle = '#facc15'; ctx.fillRect(-15, -4, 9, 9); // Fins
                 }
                 ctx.restore();
             }
 
-            // 5. Hook & Line (Boat Mode)
-            if (mode === 'BOAT') {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.moveTo(boat.x + 18, currentBoatY - 28); ctx.lineTo(hook.x, hook.y); ctx.stroke();
-                ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2.5;
-                ctx.beginPath(); ctx.arc(hook.x, hook.y + 4, hook.radius * 0.6, 0, Math.PI); ctx.stroke();
+            // 5. RENDER PRINCESS MARINA NPC
+            if (!princess.rescued) {
+                ctx.save();
+                ctx.translate(princess.x - camera.x, princess.y - camera.y);
+                ctx.shadowColor = '#facc15'; ctx.shadowBlur = 15;
+                ctx.fillStyle = 'rgba(250, 204, 21, 0.35)'; ctx.beginPath(); ctx.arc(0, 0, 28, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#ec4899'; ctx.fillRect(-8, -10, 16, 18); // Dress
+                ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(0, -14, 8, 0, Math.PI * 2); ctx.fill(); // Crown/Head
+                ctx.restore();
             }
 
-            // 6. Fish Entities & Floating Scores
+            // 6. HOOK & LINE (Boat Mode)
+            if (mode === 'BOAT') {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(boat.x + 18 - camera.x, currentBoatY - 28 - camera.y);
+                ctx.lineTo(hook.x - camera.x, hook.y - camera.y);
+                ctx.stroke();
+
+                ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(hook.x - camera.x, hook.y + 4 - camera.y, hook.radius * 0.6, 0, Math.PI);
+                ctx.stroke();
+            }
+
+            // 7. FISH ENTITIES & FLOATING SCORES
             entities.forEach(ent => ent.draw());
             if (hook.caughtEntity) hook.caughtEntity.draw();
 
             floatingTexts.forEach(ft => {
                 ctx.save(); ctx.globalAlpha = ft.alpha; ctx.fillStyle = ft.color;
                 ctx.font = '900 13px "Press Start 2P", monospace';
-                ctx.fillText(ft.text, ft.x - 20, ft.y); ctx.restore();
+                ctx.fillText(ft.text, ft.x - camera.x - 20, ft.y - camera.y); ctx.restore();
             });
 
             ctx.restore();
@@ -1473,7 +1575,7 @@
 
         // --- SETUP MODALS & CODE COPY HANDLERS ---
         function setupUI() {
-            initClouds();
+            initWorldEnvironment();
 
             document.getElementById('btn-start-game').addEventListener('click', () => {
                 sound.playCoin(); startNewLevel(gameStateData.highestLevel);
