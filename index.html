@@ -8,14 +8,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Retro & Arcade Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * {
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
-            font-family: 'Fredoka', 'Inter', sans-serif;
+            font-family: 'Fredoka', sans-serif;
+        }
+        .font-retro {
+            font-family: 'Press Start 2P', monospace;
         }
         body, html {
             margin: 0;
@@ -23,367 +26,389 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #0f172a;
+            background-color: #030712;
         }
         canvas {
             display: block;
             width: 100%;
             height: 100%;
         }
-        /* Custom scrollbar for modals */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
         }
         ::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 4px;
+            background: rgba(15, 23, 42, 0.6);
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
+            background: #0ea5e9;
             border-radius: 4px;
         }
-        .glow-text {
-            text-shadow: 0 0 10px rgba(56, 189, 248, 0.7), 0 2px 4px rgba(0,0,0,0.5);
+        .glow-mario {
+            text-shadow: 0 0 10px rgba(250, 204, 21, 0.9), 0 3px 0 #854d0e;
         }
-        .glow-gold {
-            text-shadow: 0 0 10px rgba(251, 191, 36, 0.8), 0 2px 4px rgba(0,0,0,0.5);
+        .glow-cyan {
+            text-shadow: 0 0 12px rgba(56, 189, 248, 0.9), 0 2px 4px rgba(0,0,0,0.8);
         }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
+        @keyframes marioPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
         }
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
+        .animate-mario-bounce {
+            animation: marioPulse 1.8s infinite ease-in-out;
+        }
+        @keyframes floatCrate {
+            0%, 100% { transform: translateY(0px) rotate(-2deg); }
+            50% { transform: translateY(-6px) rotate(2deg); }
+        }
+        .animate-crate {
+            animation: floatCrate 2.2s ease-in-out infinite;
         }
     </style>
 </head>
-<body class="flex justify-center items-center h-screen w-screen overflow-hidden text-white">
+<body class="flex justify-center items-center h-screen w-screen overflow-hidden text-white bg-slate-950">
 
-    <!-- Main Game Wrapper Container -->
-    <div id="game-container" class="relative w-full h-full max-w-md md:max-w-2xl lg:max-w-4xl h-full mx-auto flex flex-col shadow-2xl overflow-hidden bg-sky-900">
+    <!-- Main Game Container -->
+    <div id="game-container" class="relative w-full h-full max-w-md md:max-w-2xl lg:max-w-4xl mx-auto flex flex-col shadow-2xl overflow-hidden bg-sky-950">
         
-        <!-- Game Canvas Layer -->
+        <!-- Game Canvas (Rendered with 5D Parallax, Waves & Shaders) -->
         <canvas id="gameCanvas" class="absolute inset-0 z-0"></canvas>
 
-        <!-- Top HUD (Visible during gameplay) -->
-        <div id="hud" class="absolute top-0 left-0 w-full z-10 p-3 flex flex-col gap-2 pointer-events-none hidden">
-            <!-- Upper HUD Row -->
-            <div class="flex justify-between items-center bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-sky-400/30 shadow-lg pointer-events-auto">
-                <!-- Level & Biome Badge -->
-                <div class="flex items-center gap-2">
-                    <span id="hud-level-badge" class="bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-900 text-xs md:text-sm font-extrabold px-3 py-1 rounded-full shadow">Lvl 1</span>
-                    <span id="hud-biome-name" class="text-xs md:text-sm text-sky-200 font-bold hidden sm:inline">Coral Cove</span>
+        <!-- TOP HUD BAR (Pinned to Top Edge - Zero Overlap with Fisherman Face) -->
+        <div id="hud" class="absolute top-0 left-0 w-full z-10 pt-2 px-3 pb-1 flex flex-col gap-1.5 pointer-events-none hidden">
+            <div class="flex justify-between items-center bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-sky-500/40 shadow-xl pointer-events-auto">
+                <!-- Level Badge -->
+                <div class="flex items-center gap-1.5">
+                    <span id="hud-level-badge" class="bg-amber-400 text-slate-950 font-retro text-[10px] md:text-xs px-2.5 py-1 rounded-lg font-bold shadow">LVL 1</span>
+                    <span id="hud-biome-name" class="text-xs text-sky-200 font-bold hidden sm:inline">Coral Cove</span>
                 </div>
-                <!-- Points Goal & Current -->
-                <div class="text-center">
-                    <div class="text-[10px] uppercase tracking-wider text-sky-300 font-bold">Goal: <span id="hud-target-points" class="text-amber-300">200</span></div>
-                    <div class="text-lg md:text-2xl font-black text-white glow-text"><span id="hud-level-points">0</span></div>
-                </div>
-                <!-- Timer -->
-                <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1 rounded-xl border border-rose-500/30">
-                    <i class="fa-solid fa-stopwatch text-rose-400 text-sm animate-pulse"></i>
-                    <span id="hud-timer" class="text-base md:text-xl font-black text-rose-300">60s</span>
-                </div>
-            </div>
 
-            <!-- Lower HUD Row (Stats & Controls) -->
-            <div class="flex justify-between items-center px-1">
-                <div class="flex items-center gap-2">
-                    <div class="bg-slate-900/80 backdrop-blur-sm px-3 py-1 rounded-xl border border-amber-500/30 flex items-center gap-1.5 pointer-events-auto">
-                        <i class="fa-solid fa-coins text-amber-400 text-xs"></i>
-                        <span id="hud-total-points" class="text-xs font-bold text-amber-200">0</span>
-                    </div>
-                    <div id="combo-badge" class="bg-gradient-to-r from-purple-600 to-pink-600 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold text-white shadow transform scale-0 transition-transform duration-200">
-                        x<span id="hud-combo-count">1</span> COMBO!
-                    </div>
+                <!-- Points & Goal -->
+                <div class="text-center">
+                    <div class="text-[9px] uppercase font-retro text-amber-300">GOAL: <span id="hud-target-points">200</span></div>
+                    <div class="text-base md:text-xl font-retro font-extrabold text-white glow-cyan"><span id="hud-level-points">0</span></div>
                 </div>
-                
-                <!-- Action Controls -->
-                <div class="flex items-center gap-2 pointer-events-auto">
-                    <button id="btn-sound-hud" class="w-9 h-9 bg-slate-800/90 hover:bg-slate-700 text-sky-300 rounded-xl border border-sky-400/40 flex items-center justify-center transition active:scale-95 shadow">
-                        <i class="fa-solid fa-volume-high text-xs"></i>
+
+                <!-- Timer & Coins -->
+                <div class="flex items-center gap-2">
+                    <div class="bg-rose-950/90 border border-rose-500/50 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                        <i class="fa-solid fa-stopwatch text-rose-400 text-xs animate-pulse"></i>
+                        <span id="hud-timer" class="font-retro text-xs md:text-sm text-rose-300">60s</span>
+                    </div>
+
+                    <!-- BGM & Sound Controls -->
+                    <button id="btn-sound-hud" class="w-7 h-7 bg-sky-900/90 hover:bg-sky-800 text-amber-300 rounded-lg border border-sky-400/40 flex items-center justify-center transition active:scale-95 shadow" title="Toggle Sound">
+                        <i id="hud-sound-icon" class="fa-solid fa-volume-high text-xs"></i>
                     </button>
-                    <button id="btn-pause" class="w-9 h-9 bg-slate-800/90 hover:bg-slate-700 text-sky-300 rounded-xl border border-sky-400/40 flex items-center justify-center transition active:scale-95 shadow">
+                    <button id="btn-pause" class="w-7 h-7 bg-sky-900/90 hover:bg-sky-800 text-sky-200 rounded-lg border border-sky-400/40 flex items-center justify-center transition active:scale-95 shadow">
                         <i class="fa-solid fa-pause text-xs"></i>
                     </button>
                 </div>
             </div>
+
+            <!-- Lower Secondary Stats Bar -->
+            <div class="flex justify-between items-center px-1 pointer-events-none">
+                <div class="flex items-center gap-2">
+                    <div class="bg-slate-950/80 backdrop-blur-sm px-2.5 py-0.5 rounded-lg border border-amber-400/40 flex items-center gap-1.5 pointer-events-auto">
+                        <i class="fa-solid fa-coins text-amber-400 text-xs"></i>
+                        <span id="hud-total-points" class="font-retro text-[11px] text-amber-300">0</span>
+                    </div>
+                    <div id="combo-badge" class="bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-retro text-[9px] px-2 py-0.5 rounded-md font-bold shadow transform scale-0 transition-transform duration-200">
+                        x<span id="hud-combo-count">1</span> MARIO STREAK!
+                    </div>
+                </div>
+
+                <!-- Active Power-up Pill Banner -->
+                <div id="fever-banner" class="bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 font-retro text-[9px] px-2.5 py-0.5 rounded-full text-white shadow animate-pulse hidden">
+                    <i class="fa-solid fa-bolt mr-1"></i> <span id="fever-text">FEVER FRENZY!</span>
+                </div>
+            </div>
         </div>
 
-        <!-- Touch Controls Helper / Hint Overlay -->
+        <!-- Touch Hint Overlay -->
         <div id="touch-hint" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-center hidden">
-            <span class="bg-slate-900/80 text-sky-200 text-xs px-4 py-2 rounded-full border border-sky-400/30 backdrop-blur-md shadow-lg animate-pulse">
-                <i class="fa-solid fa-hand-pointer mr-1"></i> Tap anywhere to Cast Lure
+            <span class="bg-slate-950/90 text-amber-300 font-retro text-[10px] px-3.5 py-2 rounded-xl border border-amber-400/50 shadow-2xl animate-bounce flex items-center gap-1.5">
+                <i class="fa-solid fa-hand-pointer text-cyan-300"></i> TAP ANYWHERE TO CAST HOOK!
             </span>
         </div>
 
-        <!-- MAIN MENU OVERLAY -->
-        <div id="modal-main-menu" class="absolute inset-0 z-20 flex flex-col justify-between p-6 bg-gradient-to-b from-sky-900/90 via-slate-900/95 to-slate-950/98 backdrop-blur-md">
+        <!-- MAIN MENU MODAL -->
+        <div id="modal-main-menu" class="absolute inset-0 z-20 flex flex-col justify-between p-5 bg-gradient-to-b from-sky-950/95 via-slate-950/98 to-slate-950 backdrop-blur-md">
             <!-- Brand Header -->
-            <div class="text-center mt-6 animate-float">
-                <div class="inline-block bg-sky-500/20 text-sky-300 border border-sky-400/40 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+            <div class="text-center mt-4 animate-mario-bounce">
+                <div class="inline-block bg-sky-500/20 text-cyan-300 border border-cyan-400/40 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2">
                     Apex Mobility System Presents
                 </div>
-                <h1 class="text-3xl md:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-amber-300 glow-text drop-shadow">
+                <h1 class="text-2xl md:text-4xl font-retro font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-200 to-yellow-400 glow-mario drop-shadow-lg leading-snug">
                     FISHING TITANS
                 </h1>
-                <p class="text-sm font-semibold text-sky-300 tracking-wide mt-1">OCEAN QUEST ARCADE</p>
+                <p class="text-xs font-retro text-cyan-300 tracking-wider mt-2">OCEAN QUEST 5D ARCADE</p>
             </div>
 
-            <!-- Central Options Menu -->
+            <!-- Central Buttons -->
             <div class="flex flex-col gap-3 w-full max-w-xs mx-auto my-auto">
-                <button id="btn-start-game" class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xl rounded-2xl shadow-lg border-2 border-emerald-200 transform active:scale-95 transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-play"></i> START FISHING
+                <button id="btn-start-game" class="w-full py-3.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-retro text-sm font-black rounded-2xl shadow-2xl border-2 border-yellow-200 transform active:scale-95 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> START GAME
                 </button>
                 
-                <div class="grid grid-cols-2 gap-3">
-                    <button id="btn-open-upgrades" class="py-3 bg-slate-800/90 hover:bg-slate-700/90 text-amber-300 border border-amber-500/40 font-bold rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-2 text-sm">
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button id="btn-open-upgrades" class="py-2.5 bg-slate-900/90 hover:bg-slate-800 text-amber-300 border border-amber-500/40 font-bold rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-1.5 text-xs">
                         <i class="fa-solid fa-circle-up text-amber-400"></i> Gear Shop
                     </button>
-                    <button id="btn-open-tasks" class="py-3 bg-slate-800/90 hover:bg-slate-700/90 text-sky-300 border border-sky-400/40 font-bold rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-2 text-sm">
-                        <i class="fa-solid fa-list-check text-sky-400"></i> Quests
+                    <button id="btn-open-tasks" class="py-2.5 bg-slate-900/90 hover:bg-slate-800 text-sky-300 border border-sky-400/40 font-bold rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-1.5 text-xs">
+                        <i class="fa-solid fa-list-check text-cyan-400"></i> Quests
                     </button>
                 </div>
 
-                <button id="btn-open-biomes" class="w-full py-3 bg-slate-800/90 hover:bg-slate-700/90 text-indigo-300 border border-indigo-400/40 font-bold rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-2 text-sm">
-                    <i class="fa-solid fa-map-location-dot text-indigo-400"></i> Select Biome Zone
+                <button id="btn-open-biomes" class="w-full py-2.5 bg-slate-900/90 hover:bg-slate-800 text-indigo-300 border border-indigo-400/40 font-bold rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-2 text-xs">
+                    <i class="fa-solid fa-map-location-dot text-indigo-400"></i> 5D Ocean Biomes
                 </button>
             </div>
 
-            <!-- Footer Toolbar -->
-            <div class="flex justify-between items-center text-xs text-sky-400 border-t border-sky-800/50 pt-4">
-                <button id="btn-toggle-sound-menu" class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-sky-500/30 text-white font-semibold">
+            <!-- Audio & App Kit Footer -->
+            <div class="flex justify-between items-center text-xs text-sky-300 border-t border-slate-800 pt-3">
+                <button id="btn-toggle-sound-menu" class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-sky-500/30 text-xs font-semibold">
                     <i id="icon-sound-menu" class="fa-solid fa-volume-high text-emerald-400"></i>
-                    <span id="text-sound-menu">Sound ON</span>
+                    <span id="text-sound-menu">Audio ON</span>
                 </button>
-                
-                <button id="btn-open-app-kit" class="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-xl transition">
-                    <i class="fa-solid fa-shield-halved text-amber-400"></i> App Info & Legal
+
+                <button id="btn-open-app-kit" class="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-bold transition">
+                    <i class="fa-solid fa-shield-halved text-amber-400"></i> Play Store & Legal Kit
                 </button>
             </div>
         </div>
 
-        <!-- UPGRADES SHOP MODAL -->
-        <div id="modal-upgrades" class="absolute inset-0 z-30 bg-slate-950/95 backdrop-blur-md p-6 flex flex-col justify-between hidden">
+        <!-- UPGRADE SHOP MODAL -->
+        <div id="modal-upgrades" class="absolute inset-0 z-30 bg-slate-950/95 backdrop-blur-md p-5 flex flex-col justify-between hidden">
             <div>
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-3">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-screwdriver-wrench text-amber-400 text-xl"></i>
-                        <h2 class="text-xl font-black text-white">GEAR & UPGRADES</h2>
+                        <i class="fa-solid fa-screwdriver-wrench text-amber-400 text-lg"></i>
+                        <h2 class="text-lg font-black text-white">MARIO GEAR SHOP</h2>
                     </div>
                     <button id="btn-close-upgrades" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
-                <!-- Currency display -->
-                <div class="bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-amber-500/40 p-3 rounded-xl mb-4 flex justify-between items-center">
-                    <span class="text-xs font-bold text-amber-300 uppercase">Available Points</span>
-                    <span class="text-lg font-black text-amber-400 flex items-center gap-1.5">
+                <div class="bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-amber-500/40 p-2.5 rounded-xl mb-3 flex justify-between items-center">
+                    <span class="text-xs font-bold text-amber-300 uppercase">Available Gold Coins</span>
+                    <span class="text-base font-retro font-black text-amber-400 flex items-center gap-1">
                         <i class="fa-solid fa-coins"></i> <span id="shop-coins-display">0</span>
                     </span>
                 </div>
 
-                <!-- Upgrades List -->
-                <div class="flex flex-col gap-3 max-h-[55vh] overflow-y-auto pr-1">
-                    <!-- Item 1: Reel Speed -->
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center text-lg">
+                <div class="flex flex-col gap-2.5 max-h-[55vh] overflow-y-auto pr-1">
+                    <!-- Item 1 -->
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center text-base">
                                 <i class="fa-solid fa-gauge-high"></i>
                             </div>
                             <div>
-                                <h3 class="text-sm font-bold text-white">Titan Reel Motor</h3>
-                                <p class="text-[11px] text-slate-400">Increases reel speed by +25%</p>
-                                <span id="upgrade-lvl-reel" class="text-[10px] text-sky-400 font-semibold">Lvl 1/5</span>
+                                <h3 class="text-xs font-bold text-white">Titan Reel Motor</h3>
+                                <p class="text-[10px] text-slate-400">+25% faster reeling speed</p>
+                                <span id="upgrade-lvl-reel" class="text-[9px] font-retro text-sky-400">Lvl 1/5</span>
                             </div>
                         </div>
-                        <button id="btn-buy-reel" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-lg shadow active:scale-95 transition">
+                        <button id="btn-buy-reel" class="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
                             <span id="cost-reel">150</span> Pts
                         </button>
                     </div>
 
-                    <!-- Item 2: Hook Radius -->
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+                    <!-- Item 2 -->
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-base">
                                 <i class="fa-solid fa-magnet"></i>
                             </div>
                             <div>
-                                <h3 class="text-sm font-bold text-white">Magnet Hook Radius</h3>
-                                <p class="text-[11px] text-slate-400">Expands catch zone by +20%</p>
-                                <span id="upgrade-lvl-hook" class="text-[10px] text-emerald-400 font-semibold">Lvl 1/5</span>
+                                <h3 class="text-xs font-bold text-white">Super Magnet Hook</h3>
+                                <p class="text-[10px] text-slate-400">+20% catch radius area</p>
+                                <span id="upgrade-lvl-hook" class="text-[9px] font-retro text-emerald-400">Lvl 1/5</span>
                             </div>
                         </div>
-                        <button id="btn-buy-hook" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-lg shadow active:scale-95 transition">
+                        <button id="btn-buy-hook" class="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
                             <span id="cost-hook">200</span> Pts
                         </button>
                     </div>
 
-                    <!-- Item 3: Bonus Time -->
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center text-lg">
+                    <!-- Item 3 -->
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center text-base">
                                 <i class="fa-solid fa-hourglass-half"></i>
                             </div>
                             <div>
-                                <h3 class="text-sm font-bold text-white">Extended Clock</h3>
-                                <p class="text-[11px] text-slate-400">Adds +10s to level timers</p>
-                                <span id="upgrade-lvl-time" class="text-[10px] text-rose-400 font-semibold">Lvl 1/5</span>
+                                <h3 class="text-xs font-bold text-white">Chrono Clock Booster</h3>
+                                <p class="text-[10px] text-slate-400">+10s extra time per level</p>
+                                <span id="upgrade-lvl-time" class="text-[9px] font-retro text-rose-400">Lvl 1/5</span>
                             </div>
                         </div>
-                        <button id="btn-buy-time" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-lg shadow active:scale-95 transition">
+                        <button id="btn-buy-time" class="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
                             <span id="cost-time">250</span> Pts
                         </button>
                     </div>
 
-                    <!-- Item 4: Golden Lure -->
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-lg">
-                                <i class="fa-solid fa-sparkles"></i>
+                    <!-- Item 4 -->
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-base">
+                                <i class="fa-solid fa-box-open"></i>
                             </div>
                             <div>
-                                <h3 class="text-sm font-bold text-white">Titan Golden Lure</h3>
-                                <p class="text-[11px] text-slate-400">Spawns +15% rare golden fish</p>
-                                <span id="upgrade-lvl-lure" class="text-[10px] text-purple-400 font-semibold">Lvl 1/5</span>
+                                <h3 class="text-xs font-bold text-white">? Block Lucky Lure</h3>
+                                <p class="text-[10px] text-slate-400">+20% more ? Mystery crates & golden fish</p>
+                                <span id="upgrade-lvl-lure" class="text-[9px] font-retro text-purple-400">Lvl 1/5</span>
                             </div>
                         </div>
-                        <button id="btn-buy-lure" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-lg shadow active:scale-95 transition">
+                        <button id="btn-buy-lure" class="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
                             <span id="cost-lure">350</span> Pts
                         </button>
                     </div>
                 </div>
             </div>
 
-            <button id="btn-back-upgrades" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm rounded-xl">
+            <button id="btn-back-upgrades" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl mt-2">
                 Return to Menu
             </button>
         </div>
 
-        <!-- QUESTS / TASKS MODAL -->
-        <div id="modal-tasks" class="absolute inset-0 z-30 bg-slate-950/95 backdrop-blur-md p-6 flex flex-col justify-between hidden">
+        <!-- QUESTS MODAL -->
+        <div id="modal-tasks" class="absolute inset-0 z-30 bg-slate-950/95 backdrop-blur-md p-5 flex flex-col justify-between hidden">
             <div>
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-3">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-trophy text-amber-400 text-xl"></i>
-                        <h2 class="text-xl font-black text-white">TASKS & QUESTS</h2>
+                        <i class="fa-solid fa-trophy text-amber-400 text-lg"></i>
+                        <h2 class="text-lg font-black text-white">TITAN QUESTS & TASKS</h2>
                     </div>
                     <button id="btn-close-tasks" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
-                <div class="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1" id="quests-container">
-                    <!-- Quest cards rendered dynamically -->
+                <div class="flex flex-col gap-2.5 max-h-[60vh] overflow-y-auto pr-1" id="quests-container">
+                    <!-- Dynamic quests -->
                 </div>
             </div>
 
-            <button id="btn-back-tasks" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm rounded-xl">
+            <button id="btn-back-tasks" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl mt-2">
                 Return to Menu
             </button>
         </div>
 
-        <!-- BIOMES SELECTOR MODAL -->
-        <div id="modal-biomes" class="absolute inset-0 z-30 bg-slate-950/95 backdrop-blur-md p-6 flex flex-col justify-between hidden">
+        <!-- 5D BIOMES MODAL -->
+        <div id="modal-biomes" class="absolute inset-0 z-30 bg-slate-950/95 backdrop-blur-md p-5 flex flex-col justify-between hidden">
             <div>
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-3">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-water text-cyan-400 text-xl"></i>
-                        <h2 class="text-xl font-black text-white">OCEAN BIOME ZONES</h2>
+                        <i class="fa-solid fa-water text-cyan-400 text-lg"></i>
+                        <h2 class="text-lg font-black text-white">5D OCEAN BIOMES</h2>
                     </div>
                     <button id="btn-close-biomes" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
-                <div class="flex flex-col gap-3">
-                    <!-- Biome 1 -->
-                    <div class="bg-slate-900 border-2 border-cyan-500/50 p-4 rounded-2xl flex justify-between items-center">
+                <div class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
+                    <div class="bg-slate-900 border-2 border-cyan-500/50 p-3 rounded-xl flex justify-between items-center">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-cyan-400 tracking-wider">Levels 1 - 2</span>
-                            <h3 class="text-base font-black text-white">Sunny Coral Cove</h3>
-                            <p class="text-xs text-slate-400">Calm waters, angelfish & green turtles.</p>
+                            <span class="text-[9px] font-retro text-cyan-400">ZONE 1 (LVL 1-2)</span>
+                            <h3 class="text-sm font-bold text-white">Sunny Coral Cove</h3>
+                            <p class="text-[10px] text-slate-400">Reef angelfish & gentle sea turtles.</p>
                         </div>
-                        <i class="fa-solid fa-circle-check text-emerald-400 text-xl"></i>
+                        <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
                     </div>
 
-                    <!-- Biome 2 -->
-                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex justify-between items-center">
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-amber-400 tracking-wider">Levels 3 - 4</span>
-                            <h3 class="text-base font-black text-white">Golden Sunset Lagoon</h3>
-                            <p class="text-xs text-slate-400">Fast currents & rare golden fish bonuses.</p>
+                            <span class="text-[9px] font-retro text-amber-400">ZONE 2 (LVL 3-4)</span>
+                            <h3 class="text-sm font-bold text-white">Golden Sunset Lagoon</h3>
+                            <p class="text-[10px] text-slate-400">Fast currents & golden multiplier fish.</p>
                         </div>
-                        <i id="biome-lock-2" class="fa-solid fa-lock text-slate-600 text-xl"></i>
+                        <i id="biome-lock-2" class="fa-solid fa-lock text-slate-600 text-lg"></i>
                     </div>
 
-                    <!-- Biome 3 -->
-                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex justify-between items-center">
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">Levels 5+</span>
-                            <h3 class="text-base font-black text-white">Midnight Titan Trench</h3>
-                            <p class="text-xs text-slate-400">Deep glowing leviathans & high multiplier score!</p>
+                            <span class="text-[9px] font-retro text-emerald-400">ZONE 3 (LVL 5-6)</span>
+                            <h3 class="text-sm font-bold text-white">Emerald Seaweed Jungle</h3>
+                            <p class="text-[10px] text-slate-400">Dense kelp & hidden ? mystery crates.</p>
                         </div>
-                        <i id="biome-lock-3" class="fa-solid fa-lock text-slate-600 text-xl"></i>
+                        <i id="biome-lock-3" class="fa-solid fa-lock text-slate-600 text-lg"></i>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center">
+                        <div>
+                            <span class="text-[9px] font-retro text-rose-400">ZONE 4 (LVL 7-8)</span>
+                            <h3 class="text-sm font-bold text-white">Volcanic Lava Trench</h3>
+                            <p class="text-[10px] text-slate-400">Magma vents & electrical jellyfish hazards!</p>
+                        </div>
+                        <i id="biome-lock-4" class="fa-solid fa-lock text-slate-600 text-lg"></i>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center">
+                        <div>
+                            <span class="text-[9px] font-retro text-purple-400">ZONE 5 (LVL 9+)</span>
+                            <h3 class="text-sm font-bold text-white">Bioluminescent Titan Abyss</h3>
+                            <p class="text-[10px] text-slate-400">Glowing abyssal titans with mega points!</p>
+                        </div>
+                        <i id="biome-lock-5" class="fa-solid fa-lock text-slate-600 text-lg"></i>
                     </div>
                 </div>
             </div>
 
-            <button id="btn-back-biomes" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm rounded-xl">
+            <button id="btn-back-biomes" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl mt-2">
                 Return to Menu
             </button>
         </div>
 
-        <!-- LEVEL END RESULTS MODAL (WIN / LOSS) -->
+        <!-- LEVEL RESULTS MODAL (WIN / LOSS) -->
         <div id="modal-level-result" class="absolute inset-0 z-40 bg-slate-950/95 backdrop-blur-md p-6 flex flex-col items-center justify-center text-center hidden">
-            <div id="result-icon-container" class="w-20 h-20 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-4xl mb-4 border border-amber-500/40">
+            <div id="result-icon-container" class="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-3xl mb-3 border border-amber-500/40">
                 <i class="fa-solid fa-trophy"></i>
             </div>
             
-            <h2 id="result-title" class="text-3xl font-black text-white glow-gold mb-1">LEVEL COMPLETED!</h2>
-            <p id="result-subtitle" class="text-sm text-sky-300 font-medium mb-4">You reached the ocean quota!</p>
+            <h2 id="result-title" class="text-2xl font-retro font-black text-amber-400 glow-mario mb-1">COURSE CLEAR!</h2>
+            <p id="result-subtitle" class="text-xs text-sky-200 mb-4">You reached the required fish score target!</p>
 
-            <!-- Stars display -->
-            <div class="flex gap-2 text-2xl text-amber-400 mb-6">
+            <div class="flex gap-2 text-xl text-amber-400 mb-4">
                 <i id="star-1" class="fa-solid fa-star"></i>
                 <i id="star-2" class="fa-solid fa-star"></i>
                 <i id="star-3" class="fa-solid fa-star text-slate-700"></i>
             </div>
 
-            <!-- Stats Table -->
-            <div class="w-full max-w-xs bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-6 flex flex-col gap-2">
+            <div class="w-full max-w-xs bg-slate-900 border border-slate-800 rounded-xl p-3 mb-5 flex flex-col gap-1.5">
                 <div class="flex justify-between text-xs">
-                    <span class="text-slate-400">Level Score:</span>
+                    <span class="text-slate-400">Level Points:</span>
                     <span id="result-score" class="font-bold text-sky-300">240 Pts</span>
                 </div>
                 <div class="flex justify-between text-xs">
                     <span class="text-slate-400">Target Needed:</span>
                     <span id="result-target" class="font-bold text-slate-300">200 Pts</span>
                 </div>
-                <div class="flex justify-between text-xs border-t border-slate-800 pt-2">
-                    <span class="text-slate-400">Coins Earned:</span>
+                <div class="flex justify-between text-xs border-t border-slate-800 pt-1.5">
+                    <span class="text-slate-400">Gold Coins Awarded:</span>
                     <span id="result-coins" class="font-black text-amber-400">+240 Coins</span>
                 </div>
             </div>
 
-            <div class="flex flex-col gap-3 w-full max-w-xs">
-                <button id="btn-next-level" class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-lg rounded-2xl shadow-lg border-2 border-emerald-200 active:scale-95 transition">
+            <div class="flex flex-col gap-2.5 w-full max-w-xs">
+                <button id="btn-next-level" class="w-full py-3.5 bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-retro text-xs font-black rounded-xl shadow-lg border-2 border-yellow-200 active:scale-95 transition">
                     NEXT LEVEL <i class="fa-solid fa-arrow-right ml-1"></i>
                 </button>
-                <button id="btn-retry-level" class="w-full py-3 bg-slate-800 text-slate-300 font-bold text-sm rounded-xl hover:bg-slate-700">
+                <button id="btn-retry-level" class="w-full py-2.5 bg-slate-800 text-slate-300 font-bold text-xs rounded-xl hover:bg-slate-700">
                     Retry Level
                 </button>
             </div>
         </div>
 
-        <!-- APP INFO & LEGAL KIT MODAL (Play Store Metadata & Privacy Policy) -->
-        <div id="modal-app-kit" class="absolute inset-0 z-50 bg-slate-950/98 backdrop-blur-lg p-6 flex flex-col justify-between hidden">
+        <!-- PLAY STORE & LEGAL KIT MODAL -->
+        <div id="modal-app-kit" class="absolute inset-0 z-50 bg-slate-950/98 backdrop-blur-lg p-5 flex flex-col justify-between hidden">
             <div>
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 mb-3">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-mobile-screen-button text-sky-400 text-xl"></i>
-                        <h2 class="text-lg font-black text-white">PLAY STORE & LEGAL KIT</h2>
+                        <i class="fa-solid fa-mobile-screen-button text-cyan-400 text-lg"></i>
+                        <h2 class="text-base font-black text-white">PLAY STORE & LEGAL KIT</h2>
                     </div>
                     <button id="btn-close-app-kit" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
                         <i class="fa-solid fa-xmark"></i>
@@ -391,119 +416,101 @@
                 </div>
 
                 <!-- Tabs -->
-                <div class="flex bg-slate-900 p-1 rounded-xl mb-4 gap-1 border border-slate-800">
-                    <button id="tab-store-btn" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-sky-500 text-slate-950">Play Listing</button>
-                    <button id="tab-webintoapp-btn" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white">WebIntoApp</button>
-                    <button id="tab-privacy-btn" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white">Privacy Policy</button>
+                <div class="flex bg-slate-900 p-1 rounded-xl mb-3 gap-1 border border-slate-800">
+                    <button id="tab-store-btn" class="flex-1 py-1 text-[11px] font-bold rounded-lg bg-amber-400 text-slate-950">Store Copy</button>
+                    <button id="tab-webintoapp-btn" class="flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white">WebIntoApp</button>
+                    <button id="tab-privacy-btn" class="flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white">Privacy Policy</button>
                 </div>
 
-                <!-- Tab 1: Play Store Listing Content -->
-                <div id="tab-store-content" class="max-h-[50vh] overflow-y-auto space-y-3 text-xs pr-1">
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                        <div class="text-[10px] uppercase text-sky-400 font-bold">App Name</div>
-                        <div class="font-bold text-white text-sm">Fishing Titans: Ocean Quest</div>
-                        <div class="text-[10px] text-slate-400">Publisher: Apex Mobility System</div>
+                <!-- Tab 1: Play Store Listing -->
+                <div id="tab-store-content" class="max-h-[50vh] overflow-y-auto space-y-2.5 text-xs pr-1">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex justify-between items-center">
+                        <div>
+                            <div class="text-[9px] font-retro text-amber-400">APP NAME</div>
+                            <div class="font-bold text-white text-sm">Fishing Titans: Ocean Quest</div>
+                        </div>
+                        <button onclick="copyText('Fishing Titans: Ocean Quest')" class="px-2 py-1 bg-slate-800 text-amber-300 rounded text-[10px] hover:bg-slate-700">Copy</button>
                     </div>
                     
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                        <div class="text-[10px] uppercase text-sky-400 font-bold">Package Name (App ID)</div>
-                        <div class="font-mono text-amber-300">com.apexmobilitysystem.fishingtitans</div>
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex justify-between items-center">
+                        <div>
+                            <div class="text-[9px] font-retro text-amber-400">PACKAGE ID</div>
+                            <div class="font-mono text-cyan-300">com.apexmobilitysystem.fishingtitans</div>
+                        </div>
+                        <button onclick="copyText('com.apexmobilitysystem.fishingtitans')" class="px-2 py-1 bg-slate-800 text-amber-300 rounded text-[10px] hover:bg-slate-700">Copy</button>
                     </div>
 
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                        <div class="text-[10px] uppercase text-sky-400 font-bold">Short Description (Max 80 chars)</div>
-                        <div class="text-slate-200 mt-1">Cast your reel, brave titan ocean depths, and upgrade gear in this arcade quest!</div>
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+                        <div class="text-[9px] font-retro text-amber-400 mb-1">SHORT DESCRIPTION</div>
+                        <p class="text-slate-200 text-[11px]">Cast your hook, brave 5D ocean biomes, hit ? mystery crates & upgrade gear!</p>
                     </div>
 
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                        <div class="text-[10px] uppercase text-sky-400 font-bold mb-1">Full Description</div>
-                        <p class="text-slate-300 leading-relaxed whitespace-pre-line">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+                        <div class="text-[9px] font-retro text-amber-400 mb-1">FULL DESCRIPTION</div>
+                        <p class="text-slate-300 text-[11px] leading-relaxed whitespace-pre-line">
                             Welcome to Fishing Titans: Ocean Quest by Apex Mobility System! 
 
-                            Embark on an epic arcade fishing adventure across vibrant ocean biomes! Cast your line from your fishing boat into Sunny Coral Coves, Golden Sunset Lagoons, and the Midnight Titan Trench.
+                            Embark on an arcade fishing adventure featuring 5D depth visual effects and Super Mario-inspired chiptune audio!
 
                             GAME FEATURES:
-                            • Dynamic Arcade Reel Physics: Precision hook swings and touch-to-cast mechanics.
-                            • Multiple Ocean Biomes: Level progression through sunny reefs, golden lagoons, and bioluminescent deep trenches.
-                            • Sea Creatures & Hazards: Catch exotic angelfish, turtles, and golden bonus titans while avoiding jellyfish electricity.
-                            • Deep Upgrade System: Boost motor reel speed, expand magnet hook radius, add bonus time, and equip golden lures.
-                            • Dynamic Audio Engine: Crisp synthesized arcade sounds and background atmosphere.
-                            • Quests & Achievements: Complete level targets and persistent session challenges.
-
-                            Download Fishing Titans: Ocean Quest today and become master of the sea!
-                        </p>
-                    </div>
-
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                        <div class="text-[10px] uppercase text-sky-400 font-bold">Google Play Content Rating & Data Safety</div>
-                        <p class="text-slate-300 mt-1">
-                            • <strong>Content Rating:</strong> Everyone (E) / PEGI 3. No violence or adult themes.<br>
-                            • <strong>Data Safety:</strong> No personal data collected or shared. Offline local storage (`localStorage`) only.
+                            • Dynamic Swing & Reel Physics: Precision hook timing and touch controls.
+                            • 5 Unique Ocean Biomes: Level up through Coral Cove, Sunset Lagoon, Seaweed Jungle, Volcanic Trench, and Titan Abyss.
+                            • Super Mario ? Mystery Crates: Catch floating mystery crates to trigger Fever Frenzy, Time Freeze, Magnet Hooks, or Coin Showers!
+                            • Chiptune Sound Engine: Retro arcade music and sound effects created with Web Audio.
+                            • Deep Upgrade Shop: Boost Reel Motor Speed, Hook Catch Radius, Level Timer, and Golden Lures.
+                            • Apex Mobility System Quality: Optimized for mobile play on all devices.
                         </p>
                     </div>
                 </div>
 
-                <!-- Tab 2: WebIntoApp Setup Instructions -->
-                <div id="tab-webintoapp-content" class="max-h-[50vh] overflow-y-auto space-y-3 text-xs pr-1 hidden">
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                        <h4 class="font-bold text-amber-400 mb-1"><i class="fa-solid fa-sliders mr-1"></i> WebIntoApp Recommended Settings</h4>
-                        <ul class="list-disc list-inside text-slate-300 space-y-1">
-                            <td><strong>App Name:</strong> Fishing Titans</td>
-                            <td><strong>App ID / Package:</strong> com.apexmobilitysystem.fishingtitans</td>
-                            <td><strong>App Mode:</strong> Dedicated HTML5 Web App / Host URL (GitHub Pages)</td>
-                            <td><strong>Orientation:</strong> Portrait / Auto-Rotate</td>
-                            <td><strong>Permissions:</strong> None required (No Location or Camera needed)</td>
-                            <td><strong>Full Screen:</strong> Enabled (Hide Android Status Bar for immersive arcade play)</td>
+                <!-- Tab 2: WebIntoApp Instructions -->
+                <div id="tab-webintoapp-content" class="max-h-[50vh] overflow-y-auto space-y-2.5 text-xs pr-1 hidden">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+                        <h4 class="font-bold text-amber-400 mb-1"><i class="fa-solid fa-sliders mr-1"></i> WebIntoApp Activation Setup</h4>
+                        <ul class="list-disc list-inside text-slate-300 space-y-1 text-[11px]">
+                            <li><strong>App Name:</strong> Fishing Titans</li>
+                            <li><strong>App Package ID:</strong> com.apexmobilitysystem.fishingtitans</li>
+                            <li><strong>Website Host URL:</strong> https://YOUR_GITHUB_USERNAME.github.io/fishing-titans/</li>
+                            <li><strong>App Mode:</strong> Dedicated HTML5 Web App</li>
+                            <li><strong>Orientation:</strong> Portrait / Auto-Rotate Supported</li>
+                            <li><strong>Fullscreen:</strong> Enabled (Hides system status bars)</li>
                         </ul>
-                    </div>
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                        <h4 class="font-bold text-sky-400 mb-1"><i class="fa-solid fa-globe mr-1"></i> GitHub Pages Hosting Steps</h4>
-                        <ol class="list-decimal list-inside text-slate-300 space-y-1">
-                            <td>Create a public GitHub repository named <code>fishing-titans</code>.</td>
-                            <td>Upload this <code>index.html</code> file to the root of the repo.</td>
-                            <td>Enable GitHub Pages in <strong>Settings > Pages</strong> (Branch: <code>main</code>, Folder: <code>/root</code>).</td>
-                            <td>Copy your live GitHub Pages HTTPS link into WebIntoApp!</td>
-                        </ol>
                     </div>
                 </div>
 
                 <!-- Tab 3: Privacy Policy HTML -->
-                <div id="tab-privacy-content" class="max-h-[50vh] overflow-y-auto space-y-3 text-xs pr-1 hidden">
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                        <h4 class="font-bold text-white mb-2">Privacy Policy & Terms for Fishing Titans</h4>
-                        <p class="text-slate-300 leading-relaxed mb-2">
-                            <strong>Effective Date:</strong> November 2026<br>
-                            <strong>Developer:</strong> Apex Mobility System
+                <div id="tab-privacy-content" class="max-h-[50vh] overflow-y-auto space-y-2.5 text-xs pr-1 hidden">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+                        <h4 class="font-bold text-white mb-1">Privacy Policy & Terms of Service</h4>
+                        <p class="text-slate-300 text-[11px] leading-relaxed mb-2">
+                            <strong>Developer:</strong> Apex Mobility System<br>
+                            <strong>Effective Date:</strong> November 2026
                         </p>
-                        <p class="text-slate-300 leading-relaxed mb-2">
-                            Apex Mobility System built "Fishing Titans: Ocean Quest" as a Free Arcade Game. This SERVICE is provided by Apex Mobility System at no cost and is intended for use as is.
-                        </p>
-                        <p class="text-slate-300 leading-relaxed mb-2">
-                            <strong>Information Collection and Use:</strong><br>
-                            Fishing Titans does NOT collect, store, or transmit any personally identifiable information (PII). Game scores, level progress, and gear upgrades are saved locally on your device using web browser standard `localStorage`.
-                        </p>
-                        <p class="text-slate-300 leading-relaxed">
-                            <strong>Contact Us:</strong><br>
-                            If you have any questions regarding this privacy policy, contact Apex Mobility System support at your registered developer email.
+                        <p class="text-slate-300 text-[11px] leading-relaxed mb-2">
+                            Fishing Titans: Ocean Quest collects NO personal data. Game state, high scores, and gear upgrades are stored exclusively on your device using standard offline `localStorage`.
                         </p>
                     </div>
                 </div>
             </div>
 
-            <button id="btn-back-app-kit" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm rounded-xl mt-3">
+            <button id="btn-back-app-kit" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl mt-2">
                 Return to Menu
             </button>
         </div>
 
     </div>
 
-    <!-- GAME ENGINE CODE -->
+    <!-- RETRO CHIPTUNE WEB AUDIO & GAME ENGINE -->
     <script>
-        // --- SYNTHESIZED WEB AUDIO SOUND SYSTEM ---
-        class SoundEngine {
+        // --- AUTHENTIC SUPER MARIO NES-STYLE WEB AUDIO CHIPTUNE ENGINE ---
+        class MarioSoundEngine {
             constructor() {
                 this.ctx = null;
                 this.enabled = true;
+                this.bgmPlaying = false;
+                this.bgmTimer = null;
+                this.tempo = 135; // BPM
+                this.currentNoteStep = 0;
             }
 
             init() {
@@ -518,25 +525,81 @@
                 }
             }
 
-            playCast() {
+            // Play synthesized retro note
+            playNote(freq, type = 'square', duration = 0.1, gainVal = 0.15) {
                 if (!this.enabled) return;
                 this.init();
                 if (!this.ctx) return;
 
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.2);
-                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.2);
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e) {}
             }
 
-            playCatch() {
+            // Mario Coin Sound (B5 -> E6 square wave)
+            playCoin() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                
+                osc.frequency.setValueAtTime(987.77, now); // B5
+                osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            }
+
+            // Mario Power-up / ? Block Arpeggio
+            playPowerup() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99]; // C4 E4 G4 C5 E5 G5
+                notes.forEach((freq, i) => {
+                    setTimeout(() => {
+                        this.playNote(freq, 'triangle', 0.12, 0.25);
+                    }, i * 45);
+                });
+            }
+
+            // 1-UP Sound
+            play1Up() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const notes = [1318.51, 1567.98, 2637.02, 2093.00, 2349.32, 3135.96];
+                notes.forEach((freq, i) => {
+                    setTimeout(() => {
+                        this.playNote(freq, 'square', 0.1, 0.2);
+                    }, i * 50);
+                });
+            }
+
+            // Hook Cast / Spring Boing
+            playCast() {
                 if (!this.enabled) return;
                 this.init();
                 if (!this.ctx) return;
@@ -545,38 +608,18 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(523.25, now); // C5
-                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
-                osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
-                gain.gain.setValueAtTime(0.4, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
-                osc.stop(now + 0.3);
+                osc.stop(now + 0.15);
             }
 
-            playGoldenCatch() {
-                if (!this.enabled) return;
-                this.init();
-                if (!this.ctx) return;
-
-                const now = this.ctx.currentTime;
-                const notes = [587.33, 739.99, 880, 1174.66];
-                notes.forEach((freq, idx) => {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, now + idx * 0.06);
-                    gain.gain.setValueAtTime(0.3, now + idx * 0.06);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.06 + 0.2);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(now + idx * 0.06);
-                    osc.stop(now + idx * 0.06 + 0.2);
-                });
-            }
-
+            // Hazard Pipe Pitch Drop (Jellyfish hit)
             playHazard() {
                 if (!this.enabled) return;
                 this.init();
@@ -586,215 +629,239 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, now);
-                osc.frequency.setValueAtTime(100, now + 0.1);
-                gain.gain.setValueAtTime(0.4, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(90, now + 0.25);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
-                osc.stop(now + 0.3);
+                osc.stop(now + 0.25);
             }
 
-            playFanfare() {
+            // Stage Clear Victory Fanfare
+            playVictory() {
                 if (!this.enabled) return;
                 this.init();
-                if (!this.ctx) return;
-
-                const now = this.ctx.currentTime;
-                const melody = [523.25, 659.25, 783.99, 1046.50];
-                melody.forEach((freq, idx) => {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, now + idx * 0.12);
-                    gain.gain.setValueAtTime(0.35, now + idx * 0.12);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.3);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(now + idx * 0.12);
-                    osc.stop(now + idx * 0.12 + 0.3);
+                const melody = [
+                    {f: 523.25, d: 0.12}, {f: 659.25, d: 0.12}, {f: 783.99, d: 0.12},
+                    {f: 1046.50, d: 0.25}, {f: 880.00, d: 0.12}, {f: 1046.50, d: 0.4}
+                ];
+                let time = 0;
+                melody.forEach(n => {
+                    setTimeout(() => this.playNote(n.f, 'square', n.d, 0.25), time);
+                    time += n.d * 1000 + 30;
                 });
             }
 
-            playClick() {
+            // Game Over Tune
+            playGameOver() {
                 if (!this.enabled) return;
                 this.init();
-                if (!this.ctx) return;
+                const melody = [
+                    {f: 392.00, d: 0.18}, {f: 329.63, d: 0.18}, {f: 261.63, d: 0.18},
+                    {f: 220.00, d: 0.3}, {f: 196.00, d: 0.5}
+                ];
+                let time = 0;
+                melody.forEach(n => {
+                    setTimeout(() => this.playNote(n.f, 'sawtooth', n.d, 0.2), time);
+                    time += n.d * 1000 + 40;
+                });
+            }
 
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
-                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.05);
+            // Bouncy Retro Mario-style Chiptune BGM Loop
+            startBGM() {
+                if (this.bgmPlaying || !this.enabled) return;
+                this.bgmPlaying = true;
+                
+                // Classic Chiptune Melody Pitch Frequency Array (Mario-inspired motif)
+                const bgmNotes = [
+                    659.25, 659.25, 0, 659.25, 0, 523.25, 659.25, 0,
+                    783.99, 0, 0, 0, 392.00, 0, 0, 0,
+                    523.25, 0, 0, 392.00, 0, 0, 329.63, 0,
+                    440.00, 0, 493.88, 0, 466.16, 440.00, 0, 0
+                ];
+
+                this.currentNoteStep = 0;
+                const stepTime = () => (60 / this.tempo / 4) * 1000;
+
+                const runStep = () => {
+                    if (!this.bgmPlaying) return;
+                    let note = bgmNotes[this.currentNoteStep % bgmNotes.length];
+                    if (note > 0 && this.enabled) {
+                        this.playNote(note, 'square', 0.08, 0.06);
+                    }
+                    this.currentNoteStep++;
+                    this.bgmTimer = setTimeout(runStep, stepTime());
+                };
+
+                runStep();
+            }
+
+            stopBGM() {
+                this.bgmPlaying = false;
+                if (this.bgmTimer) clearTimeout(this.bgmTimer);
+            }
+
+            setHurryUp(isHurry) {
+                this.tempo = isHurry ? 180 : 135;
             }
         }
 
-        const sound = new SoundEngine();
+        const sound = new MarioSoundEngine();
 
-        // --- GAME STORAGE & STATE ---
+        // Unlock Web Audio on first user interaction anywhere
+        function unlockAudio() {
+            sound.init();
+            window.removeEventListener('pointerdown', unlockAudio);
+            window.removeEventListener('keydown', unlockAudio);
+        }
+        window.addEventListener('pointerdown', unlockAudio);
+        window.addEventListener('keydown', unlockAudio);
+
+        // --- STORAGE & PERSISTENCE ---
         const Storage = {
             get: () => {
                 const def = {
-                    totalCoins: 0,
-                    highestLevel: 1,
-                    reelLvl: 1,
-                    hookLvl: 1,
-                    timeLvl: 1,
-                    lureLvl: 1,
-                    soundOn: true,
-                    quests: {
-                        catches: 0,
-                        goldenCatches: 0,
-                        levelsWon: 0
-                    }
+                    totalCoins: 0, highestLevel: 1, reelLvl: 1, hookLvl: 1, timeLvl: 1, lureLvl: 1, soundOn: true,
+                    quests: { catches: 0, goldenCatches: 0, cratesOpened: 0, levelsWon: 0 }
                 };
                 try {
-                    const saved = localStorage.getItem('FISHING_TITANS_DATA');
+                    const saved = localStorage.getItem('FISHING_TITANS_5D_DATA');
                     return saved ? { ...def, ...JSON.parse(saved) } : def;
-                } catch(e) {
-                    return def;
-                }
+                } catch(e) { return def; }
             },
             save: (data) => {
-                try {
-                    localStorage.setItem('FISHING_TITANS_DATA', JSON.stringify(data));
-                } catch(e) {}
+                try { localStorage.setItem('FISHING_TITANS_5D_DATA', JSON.stringify(data)); } catch(e) {}
             }
         };
 
         let gameStateData = Storage.get();
         sound.enabled = gameStateData.soundOn;
 
-        // --- GAME ENGINE & CANVAS LOGIC ---
+        // --- GAME ENGINE & CANVAS SETUP ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-
-        let width = 0;
-        let height = 0;
-        let dpr = 1;
+        let width = 0, height = 0, dpr = 1;
 
         function resizeCanvas() {
             const container = document.getElementById('game-container');
             width = container.clientWidth;
             height = container.clientHeight;
             dpr = window.devicePixelRatio || 1;
-
             canvas.width = width * dpr;
             canvas.height = height * dpr;
             ctx.scale(dpr, dpr);
         }
-
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // Game Constants & Variables
+        // Game State Variables
         let currentLevel = 1;
         let levelPoints = 0;
-        let totalPoints = gameStateData.totalCoins;
         let targetPoints = 200;
         let timeLeft = 60;
         let timerInterval = null;
         let isPlaying = false;
         let isPaused = false;
         let comboCount = 0;
+        let screenShakeTime = 0;
+        let feverModeTime = 0;
 
-        // Boat & Hook physics
-        let boat = { x: 0, y: 0, width: 90, height: 40 };
+        // Boat & Hook Positioning (Fixed boat lower to ensure ZERO HUD overlap)
+        let boat = { x: 0, y: 0, width: 85, height: 35, waveOffset: 0 };
         let hook = {
-            x: 0,
-            y: 0,
-            angle: 0, // Swinging angle in radians
-            angleSpeed: 0.03,
-            maxAngle: Math.PI / 2.5,
-            length: 40,
-            maxLength: 0,
-            state: 'SWING', // 'SWING', 'CAST', 'REEL'
-            baseSpeed: 4,
-            speed: 4,
-            caughtEntity: null,
-            radius: 10
+            x: 0, y: 0, angle: 0, angleSpeed: 0.035, maxAngle: Math.PI / 2.4,
+            length: 28, maxLength: 0, state: 'SWING', baseSpeed: 4.5, speed: 4.5,
+            caughtEntity: null, radius: 11
         };
 
         let entities = [];
         let particles = [];
         let floatingTexts = [];
         let clouds = [];
+        let godRays = [];
 
-        // Biome Definitions
+        // 5D Biome Definitions
         const BIOMES = [
             {
                 name: "Sunny Coral Cove",
                 levels: [1, 2],
-                skyGradient: ['#70d6ff', '#e0f2fe'],
-                waterColor: 'rgba(0, 119, 182, 0.85)',
-                waterBottomColor: 'rgba(3, 4, 94, 0.95)',
-                sunColor: '#fbbf24',
-                jellyRate: 0.15,
-                goldenRate: 0.08
+                skyGradient: ['#38bdf8', '#e0f2fe'],
+                waterGradient: ['rgba(14, 165, 233, 0.85)', 'rgba(3, 105, 161, 0.95)'],
+                seabedColor: '#0284c7', sunColor: '#facc15', jellyRate: 0.12, crateRate: 0.15
             },
             {
                 name: "Golden Sunset Lagoon",
                 levels: [3, 4],
-                skyGradient: ['#ff9e00', '#ff6d00'],
-                waterColor: 'rgba(0, 150, 199, 0.85)',
-                waterBottomColor: 'rgba(10, 17, 40, 0.95)',
-                sunColor: '#f97316',
-                jellyRate: 0.25,
-                goldenRate: 0.18
+                skyGradient: ['#f97316', '#ffedd5'],
+                waterGradient: ['rgba(2, 132, 199, 0.85)', 'rgba(15, 23, 42, 0.95)'],
+                seabedColor: '#0369a1', sunColor: '#ea580c', jellyRate: 0.20, crateRate: 0.20
             },
             {
-                name: "Midnight Titan Trench",
-                levels: [5, 99],
+                name: "Emerald Seaweed Jungle",
+                levels: [5, 6],
+                skyGradient: ['#0d9488', '#ccfbf1'],
+                waterGradient: ['rgba(15, 118, 110, 0.85)', 'rgba(4, 47, 46, 0.95)'],
+                seabedColor: '#115e59', sunColor: '#2dd4bf', jellyRate: 0.25, crateRate: 0.25
+            },
+            {
+                name: "Volcanic Lava Trench",
+                levels: [7, 8],
+                skyGradient: ['#991b1b', '#fef2f2'],
+                waterGradient: ['rgba(153, 27, 27, 0.85)', 'rgba(69, 10, 10, 0.95)'],
+                seabedColor: '#7f1d1d', sunColor: '#ef4444', jellyRate: 0.32, crateRate: 0.25
+            },
+            {
+                name: "Bioluminescent Titan Abyss",
+                levels: [9, 99],
                 skyGradient: ['#0f172a', '#020617'],
-                waterColor: 'rgba(15, 23, 42, 0.9)',
-                waterBottomColor: 'rgba(2, 6, 23, 0.98)',
-                sunColor: '#38bdf8',
-                jellyRate: 0.35,
-                goldenRate: 0.25
+                waterGradient: ['rgba(30, 27, 75, 0.9)', 'rgba(3, 7, 18, 0.98)'],
+                seabedColor: '#1e1b4b', sunColor: '#818cf8', jellyRate: 0.35, crateRate: 0.30
             }
         ];
 
         function getCurrentBiome() {
             if (currentLevel <= 2) return BIOMES[0];
             if (currentLevel <= 4) return BIOMES[1];
-            return BIOMES[2];
+            if (currentLevel <= 6) return BIOMES[2];
+            if (currentLevel <= 8) return BIOMES[3];
+            return BIOMES[4];
         }
 
-        // --- ENTITY CLASSES ---
+        // --- GAME ENTITIES & MARIO ? CRATES ---
         class FishEntity {
             constructor(type, yMin, yMax) {
-                this.type = type; // 'reef', 'angel', 'turtle', 'golden', 'jelly', 'titan'
+                this.type = type; // 'reef', 'angel', 'turtle', 'golden', 'titan', 'jelly', 'crate'
                 this.x = Math.random() > 0.5 ? -40 : width + 40;
                 this.direction = this.x < 0 ? 1 : -1;
                 this.y = yMin + Math.random() * (yMax - yMin);
                 
-                // Set stats based on type
                 if (type === 'reef') {
-                    this.width = 30; this.height = 20; this.speed = (1.5 + Math.random() * 1.5) * this.direction;
+                    this.width = 32; this.height = 20; this.speed = (1.5 + Math.random() * 1.5) * this.direction;
                     this.points = 30; this.weight = 1.0; this.color = '#f97316';
                 } else if (type === 'angel') {
-                    this.width = 42; this.height = 36; this.speed = (1.2 + Math.random() * 1.2) * this.direction;
-                    this.points = 60; this.weight = 1.2; this.color = '#38bdf8';
+                    this.width = 40; this.height = 34; this.speed = (1.2 + Math.random() * 1.2) * this.direction;
+                    this.points = 60; this.weight = 1.1; this.color = '#38bdf8';
                 } else if (type === 'turtle') {
-                    this.width = 46; this.height = 30; this.speed = (0.8 + Math.random() * 0.8) * this.direction;
+                    this.width = 48; this.height = 30; this.speed = (0.8 + Math.random() * 0.8) * this.direction;
                     this.points = 100; this.weight = 2.0; this.color = '#22c55e';
                 } else if (type === 'golden') {
-                    this.width = 35; this.height = 24; this.speed = (2.5 + Math.random() * 2) * this.direction;
-                    this.points = 180; this.weight = 1.1; this.color = '#fbbf24';
+                    this.width = 36; this.height = 24; this.speed = (2.6 + Math.random() * 2) * this.direction;
+                    this.points = 180; this.weight = 1.0; this.color = '#facc15';
                 } else if (type === 'titan') {
-                    this.width = 65; this.height = 45; this.speed = (1.0 + Math.random() * 1.2) * this.direction;
-                    this.points = 300; this.weight = 3.0; this.color = '#818cf8';
+                    this.width = 68; this.height = 46; this.speed = (1.0 + Math.random() * 1.2) * this.direction;
+                    this.points = 300; this.weight = 3.2; this.color = '#a855f7';
                 } else if (type === 'jelly') {
-                    this.width = 32; this.height = 38; this.speed = 0; // Moves vertically
+                    this.width = 34; this.height = 38; this.speed = 0;
                     this.vy = (0.6 + Math.random() * 0.8) * (Math.random() > 0.5 ? 1 : -1);
                     this.points = -50; this.weight = 1.5; this.color = '#f43f5e';
                     this.yMinLimit = yMin; this.yMaxLimit = yMax;
+                } else if (type === 'crate') {
+                    // Super Mario Mystery Crate!
+                    this.width = 32; this.height = 32; this.speed = (0.9 + Math.random() * 0.6) * this.direction;
+                    this.points = 150; this.weight = 1.2; this.color = '#eab308';
                 }
             }
 
@@ -810,89 +877,57 @@
             draw() {
                 ctx.save();
                 ctx.translate(this.x, this.y);
-                if (this.direction === -1 && this.type !== 'jelly') ctx.scale(-1, 1);
+                if (this.direction === -1 && this.type !== 'jelly' && this.type !== 'crate') ctx.scale(-1, 1);
 
-                if (this.type === 'reef') {
-                    // Small Orange Reef Fish
-                    ctx.fillStyle = this.color;
-                    ctx.beginPath();
-                    ctx.ellipse(0, 0, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    // Tail
-                    ctx.beginPath();
-                    ctx.moveTo(-12, 0);
-                    ctx.lineTo(-22, -8);
-                    ctx.lineTo(-22, 8);
-                    ctx.closePath();
-                    ctx.fill();
-                    // Eye
+                if (this.type === 'crate') {
+                    // Super Mario ? Mystery Block
+                    ctx.shadowColor = '#eab308';
+                    ctx.shadowBlur = 10;
+                    ctx.fillStyle = '#eab308';
+                    ctx.fillRect(-16, -16, 32, 32);
+                    ctx.strokeStyle = '#854d0e';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(-16, -16, 32, 32);
+                    
+                    // Question mark symbol
                     ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.arc(8, -4, 4, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#000';
-                    ctx.beginPath();
-                    ctx.arc(9, -4, 2, 0, Math.PI * 2);
-                    ctx.fill();
+                    ctx.font = '900 18px "Press Start 2P", monospace';
+                    ctx.fillText('?', -6, 6);
+                } else if (this.type === 'reef') {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath(); ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-20, -7); ctx.lineTo(-20, 7); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(8, -3, 3, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(9, -3, 1.5, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'angel') {
-                    // Striped Angelfish (Matching screenshot artwork)
                     ctx.fillStyle = '#38bdf8';
-                    ctx.beginPath();
-                    ctx.ellipse(0, 0, 18, 22, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    // Yellow Stripes
-                    ctx.strokeStyle = '#fbbf24';
-                    ctx.lineWidth = 4;
-                    ctx.beginPath();
-                    ctx.moveTo(-6, -18); ctx.lineTo(-6, 18);
-                    ctx.moveTo(4, -20); ctx.lineTo(4, 20);
-                    ctx.stroke();
-                    // Long fins
-                    ctx.fillStyle = '#fbbf24';
-                    ctx.beginPath();
-                    ctx.moveTo(0, -20); ctx.lineTo(-12, -32); ctx.lineTo(6, -20);
-                    ctx.moveTo(0, 20); ctx.lineTo(-12, 32); ctx.lineTo(6, 20);
-                    ctx.fill();
-                    // Eye
-                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(8, -6, 4, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(9, -6, 2, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(0, 0, 18, 20, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(-6, -16); ctx.lineTo(-6, 16); ctx.moveTo(4, -18); ctx.lineTo(4, 18); ctx.stroke();
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(8, -5, 3.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(9, -5, 1.5, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'turtle') {
-                    // Sea Turtle
-                    ctx.fillStyle = '#15803d'; // Shell
-                    ctx.beginPath(); ctx.ellipse(0, 0, 20, 15, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#15803d'; ctx.beginPath(); ctx.ellipse(0, 0, 20, 14, 0, 0, Math.PI * 2); ctx.fill();
                     ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2; ctx.stroke();
-                    // Flippers & Head
-                    ctx.fillStyle = '#22c55e';
-                    ctx.beginPath(); ctx.arc(18, 0, 7, 0, Math.PI * 2); ctx.fill(); // Head
-                    ctx.beginPath(); ctx.ellipse(10, -14, 12, 5, Math.PI / 4, 0, Math.PI * 2); ctx.fill(); // Front flipper
-                    ctx.beginPath(); ctx.ellipse(10, 14, 12, 5, -Math.PI / 4, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(18, 0, 6, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(10, -12, 10, 4, Math.PI / 4, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(10, 12, 10, 4, -Math.PI / 4, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'golden') {
-                    // Golden Fish (Aura effect)
-                    ctx.shadowColor = '#fbbf24';
-                    ctx.shadowBlur = 12;
-                    ctx.fillStyle = '#f59e0b';
-                    ctx.beginPath(); ctx.ellipse(0, 0, 16, 11, 0, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#fef08a';
-                    ctx.beginPath(); ctx.arc(6, -3, 3, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowColor = '#facc15'; ctx.shadowBlur = 12;
+                    ctx.fillStyle = '#eab308'; ctx.beginPath(); ctx.ellipse(0, 0, 18, 12, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#fef08a'; ctx.beginPath(); ctx.arc(6, -3, 3, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'titan') {
-                    // Deep Sea Titan Fish
-                    ctx.shadowColor = '#818cf8';
-                    ctx.shadowBlur = 15;
-                    ctx.fillStyle = '#3730a3';
-                    ctx.beginPath(); ctx.ellipse(0, 0, 30, 20, 0, 0, Math.PI * 2); ctx.fill();
-                    // Bioluminescent Lure Antenna
-                    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.moveTo(15, -10); ctx.quadraticCurveTo(25, -25, 32, -15); ctx.stroke();
-                    ctx.fillStyle = '#7dd3fc'; ctx.beginPath(); ctx.arc(32, -15, 4, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowColor = '#c084fc'; ctx.shadowBlur = 16;
+                    ctx.fillStyle = '#6b21a8'; ctx.beginPath(); ctx.ellipse(0, 0, 32, 22, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(15, -10); ctx.quadraticCurveTo(25, -24, 32, -14); ctx.stroke();
+                    ctx.fillStyle = '#e9d5ff'; ctx.beginPath(); ctx.arc(32, -14, 4, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'jelly') {
-                    // Jellyfish Hazard
-                    ctx.fillStyle = 'rgba(244, 63, 94, 0.75)';
-                    ctx.beginPath(); ctx.arc(0, -6, 15, Math.PI, 0); ctx.fill();
-                    // Tentacles
+                    ctx.fillStyle = 'rgba(244, 63, 94, 0.85)';
+                    ctx.beginPath(); ctx.arc(0, -6, 16, Math.PI, 0); ctx.fill();
                     ctx.strokeStyle = '#fda4af'; ctx.lineWidth = 2;
                     for (let i = -10; i <= 10; i += 5) {
-                        ctx.beginPath();
-                        ctx.moveTo(i, -6);
+                        ctx.beginPath(); ctx.moveTo(i, -6);
                         ctx.quadraticCurveTo(i + Math.sin(Date.now() * 0.01 + i) * 5, 10, i, 20);
                         ctx.stroke();
                     }
@@ -901,61 +936,64 @@
             }
         }
 
-        // --- INIT ENVIRONMENT ---
-        function initClouds() {
+        // --- ENVIRONMENT SETUP ---
+        function initCloudsAndRays() {
             clouds = [];
             for (let i = 0; i < 4; i++) {
                 clouds.push({
-                    x: Math.random() * width,
-                    y: 15 + Math.random() * 40,
-                    size: 25 + Math.random() * 25,
-                    speed: 0.2 + Math.random() * 0.3
+                    x: Math.random() * width, y: 12 + Math.random() * 30,
+                    size: 20 + Math.random() * 20, speed: 0.2 + Math.random() * 0.3
+                });
+            }
+            godRays = [];
+            for (let i = 0; i < 5; i++) {
+                godRays.push({
+                    x: (width / 5) * i + Math.random() * 40,
+                    width: 30 + Math.random() * 40,
+                    alpha: 0.08 + Math.random() * 0.12
                 });
             }
         }
 
-        // --- GAME CONTROL FUNCTIONS ---
+        // --- LEVEL CONTROLLER ---
         function startNewLevel(lvl) {
             currentLevel = lvl;
             const biome = getCurrentBiome();
-            
-            // Adjust requirements & bonus time from upgrade
+
             targetPoints = 180 + (lvl * 60);
             levelPoints = 0;
-            timeLeft = 65 - Math.min(lvl * 2, 25) + (gameStateData.timeLvl - 1) * 10;
+            timeLeft = 60 - Math.min(lvl * 2, 20) + (gameStateData.timeLvl - 1) * 10;
             comboCount = 0;
+            feverModeTime = 0;
 
-            // Boat & Hook setup
+            // Boat position: 28% down canvas (CLEAR SKY ABOVE ANGLER FACE, ZERO HUD OVERLAP)
             boat.x = width / 2;
-            boat.y = height * 0.18;
+            boat.y = height * 0.28;
             hook.x = boat.x;
-            hook.y = boat.y + 30;
+            hook.y = boat.y + 25;
             hook.angle = 0;
-            hook.length = 20;
-            hook.maxLength = height * 0.88;
+            hook.length = 25;
+            hook.maxLength = height * 0.90;
             hook.state = 'SWING';
             hook.caughtEntity = null;
-            hook.radius = 10 + (gameStateData.hookLvl - 1) * 3;
+            hook.radius = 11 + (gameStateData.hookLvl - 1) * 3;
 
             entities = [];
             particles = [];
             floatingTexts = [];
-            
-            // Spawn initial fish density
-            const fishCount = 6 + Math.min(lvl, 8);
-            for (let i = 0; i < fishCount; i++) {
-                spawnRandomFish();
-            }
 
-            // HUD Updates
-            document.getElementById('hud-level-badge').innerText = `Lvl ${lvl}`;
+            // Initial fish spawn
+            const count = 6 + Math.min(lvl, 8);
+            for (let i = 0; i < count; i++) spawnRandomFish();
+
+            // HUD updates
+            document.getElementById('hud-level-badge').innerText = `LVL ${lvl}`;
             document.getElementById('hud-biome-name').innerText = biome.name;
             document.getElementById('hud-target-points').innerText = targetPoints;
             document.getElementById('hud-level-points').innerText = '0';
             document.getElementById('hud-total-points').innerText = gameStateData.totalCoins;
             document.getElementById('hud-timer').innerText = `${timeLeft}s`;
 
-            // Display UI
             document.getElementById('modal-main-menu').classList.add('hidden');
             document.getElementById('modal-level-result').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
@@ -963,37 +1001,40 @@
 
             isPlaying = true;
             isPaused = false;
+            sound.setHurryUp(false);
+            sound.startBGM();
 
             clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 if (isPlaying && !isPaused) {
                     timeLeft--;
                     document.getElementById('hud-timer').innerText = `${timeLeft}s`;
-                    if (timeLeft <= 0) {
-                        endLevel();
-                    }
+                    if (timeLeft === 10) sound.setHurryUp(true);
+                    if (timeLeft <= 0) endLevel();
                 }
             }, 1000);
         }
 
         function spawnRandomFish() {
             const biome = getCurrentBiome();
-            const yMin = height * 0.35;
+            const yMin = height * 0.38;
             const yMax = height * 0.88;
-            
             const rand = Math.random();
             let type = 'reef';
 
-            // Upgrade lure bonus increases golden/rare chance
             const lureBonus = (gameStateData.lureLvl - 1) * 0.05;
 
-            if (rand < biome.jellyRate) {
+            if (feverModeTime > 0) {
+                type = 'golden';
+            } else if (rand < biome.crateRate + lureBonus) {
+                type = 'crate';
+            } else if (rand < biome.crateRate + biome.jellyRate) {
                 type = 'jelly';
-            } else if (rand < biome.jellyRate + biome.goldenRate + lureBonus) {
+            } else if (rand < 0.65) {
                 type = currentLevel >= 5 ? 'titan' : 'golden';
-            } else if (rand < 0.6) {
+            } else if (rand < 0.82) {
                 type = 'angel';
-            } else if (rand < 0.8) {
+            } else {
                 type = 'turtle';
             }
 
@@ -1007,15 +1048,12 @@
                 sound.playCast();
                 document.getElementById('touch-hint').classList.add('hidden');
             } else if (hook.state === 'REEL') {
-                // Reel speed boost tap
-                const boost = 1 + (gameStateData.reelLvl * 0.2);
+                const boost = 1.2 + (gameStateData.reelLvl * 0.25);
                 hook.speed += boost;
             }
         }
 
-        // Mouse / Touch Event Listeners
         window.addEventListener('pointerdown', (e) => {
-            // Prevent triggering cast if clicking on HUD controls
             if (e.target.closest('#hud') || e.target.closest('.z-20') || e.target.closest('.z-30') || e.target.closest('.z-40') || e.target.closest('.z-50')) {
                 return;
             }
@@ -1023,69 +1061,68 @@
         });
 
         window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' || e.code === 'ArrowDown') {
-                triggerCast();
-            }
+            if (e.code === 'Space' || e.code === 'ArrowDown') triggerCast();
         });
 
-        // --- GAME LOOP & UPDATES ---
+        // --- GAME UPDATE LOOP ---
         function updateGame() {
             if (!isPlaying || isPaused) return;
 
-            // Update hook swinging
+            if (feverModeTime > 0) {
+                feverModeTime -= 0.016;
+                if (feverModeTime <= 0) {
+                    document.getElementById('fever-banner').classList.add('hidden');
+                }
+            }
+
+            // Hook Mechanics
             if (hook.state === 'SWING') {
                 hook.angle += hook.angleSpeed;
-                if (Math.abs(hook.angle) > hook.maxAngle) {
-                    hook.angleSpeed *= -1;
-                }
+                if (Math.abs(hook.angle) > hook.maxAngle) hook.angleSpeed *= -1;
                 hook.x = boat.x + Math.sin(hook.angle) * hook.length;
-                hook.y = boat.y + 25 + Math.cos(hook.angle) * hook.length;
+                hook.y = boat.y + 20 + Math.cos(hook.angle) * hook.length;
             } else if (hook.state === 'CAST') {
                 hook.length += hook.baseSpeed * 1.5;
                 hook.x = boat.x + Math.sin(hook.angle) * hook.length;
-                hook.y = boat.y + 25 + Math.cos(hook.angle) * hook.length;
+                hook.y = boat.y + 20 + Math.cos(hook.angle) * hook.length;
 
-                // Reach screen bounds or max depth
-                if (hook.y >= hook.maxLength || hook.x <= 20 || hook.x >= width - 20) {
+                if (hook.y >= hook.maxLength || hook.x <= 15 || hook.x >= width - 15) {
                     hook.state = 'REEL';
                 }
 
-                // Collision detection with fish
                 for (let i = entities.length - 1; i >= 0; i--) {
                     let ent = entities[i];
                     let dist = Math.hypot(hook.x - ent.x, hook.y - ent.y);
                     if (dist < hook.radius + ent.width / 2) {
-                        // Hooked entity!
                         hook.caughtEntity = ent;
                         entities.splice(i, 1);
                         hook.state = 'REEL';
-
                         if (ent.type === 'jelly') {
                             sound.playHazard();
                             comboCount = 0;
                             updateComboDisplay();
+                        } else if (ent.type === 'crate') {
+                            sound.playPowerup();
                         }
                         break;
                     }
                 }
             } else if (hook.state === 'REEL') {
-                let reelMotor = 3 + (gameStateData.reelLvl * 0.8);
-                let weightDrag = hook.caughtEntity ? hook.caughtEntity.weight : 1.0;
-                hook.length -= (reelMotor / weightDrag);
+                let reelMotor = 3.5 + (gameStateData.reelLvl * 0.9);
+                let drag = hook.caughtEntity ? hook.caughtEntity.weight : 1.0;
+                hook.length -= (reelMotor / drag);
 
                 hook.x = boat.x + Math.sin(hook.angle) * hook.length;
-                hook.y = boat.y + 25 + Math.cos(hook.angle) * hook.length;
+                hook.y = boat.y + 20 + Math.cos(hook.angle) * hook.length;
 
                 if (hook.caughtEntity) {
                     hook.caughtEntity.x = hook.x;
                     hook.caughtEntity.y = hook.y + 10;
                 }
 
-                // Line fully retracted back to boat
                 if (hook.length <= 25) {
                     hook.length = 25;
                     hook.state = 'SWING';
-                    
                     if (hook.caughtEntity) {
                         processCatch(hook.caughtEntity);
                         hook.caughtEntity = null;
@@ -1093,65 +1130,76 @@
                 }
             }
 
-            // Update fish entities
+            // Update Entities
             for (let i = entities.length - 1; i >= 0; i--) {
                 let ent = entities[i];
                 ent.update();
-                // Respawn fish off screen
                 if (ent.x < -60 || ent.x > width + 60) {
                     entities.splice(i, 1);
                     spawnRandomFish();
                 }
             }
 
-            // Maintain entity population
-            if (entities.length < 5) {
-                spawnRandomFish();
-            }
+            if (entities.length < 6) spawnRandomFish();
 
-            // Floating text animations
+            // Floating Text animations (Mario-style "+100!")
             for (let i = floatingTexts.length - 1; i >= 0; i--) {
                 let ft = floatingTexts[i];
-                ft.y -= 0.8;
-                ft.alpha -= 0.02;
+                ft.y -= 1.0;
+                ft.alpha -= 0.025;
                 if (ft.alpha <= 0) floatingTexts.splice(i, 1);
             }
         }
 
         function processCatch(ent) {
             let pts = ent.points;
-            
-            if (pts > 0) {
-                comboCount++;
-                let multiplier = Math.min(comboCount, 5);
-                pts *= multiplier;
 
-                if (ent.type === 'golden' || ent.type === 'titan') {
-                    sound.playGoldenCatch();
+            if (ent.type === 'crate') {
+                // Mario ? Mystery Crate Rewards!
+                gameStateData.quests.cratesOpened++;
+                const rewards = ['fever', 'freeze', 'coins', '1up'];
+                const reward = rewards[Math.floor(Math.random() * rewards.length)];
+
+                if (reward === 'fever') {
+                    feverModeTime = 6;
+                    document.getElementById('fever-text').innerText = "FEVER FRENZY!";
+                    document.getElementById('fever-banner').classList.remove('hidden');
+                    sound.playPowerup();
+                    floatingTexts.push({ text: 'FEVER FRENZY!', x: boat.x, y: boat.y - 25, color: '#facc15', alpha: 1.0 });
+                } else if (reward === 'freeze') {
+                    timeLeft += 10;
+                    sound.play1Up();
+                    floatingTexts.push({ text: '+10s TIME!', x: boat.x, y: boat.y - 25, color: '#38bdf8', alpha: 1.0 });
+                } else if (reward === 'coins') {
+                    pts = 200;
+                    sound.playCoin();
+                    floatingTexts.push({ text: '+200 COINS!', x: boat.x, y: boat.y - 25, color: '#facc15', alpha: 1.0 });
                 } else {
-                    sound.playCatch();
+                    sound.play1Up();
+                    floatingTexts.push({ text: '1-UP BONUS!', x: boat.x, y: boat.y - 25, color: '#4ade80', alpha: 1.0 });
+                }
+            } else if (pts > 0) {
+                comboCount++;
+                let mult = Math.min(comboCount, 5);
+                pts *= mult;
+
+                if (ent.type === 'titan') {
+                    sound.play1Up();
+                    screenShakeTime = 12;
+                } else {
+                    sound.playCoin();
                 }
 
                 gameStateData.quests.catches++;
                 if (ent.type === 'golden' || ent.type === 'titan') gameStateData.quests.goldenCatches++;
 
                 floatingTexts.push({
-                    text: `+${pts} ${multiplier > 1 ? 'x' + multiplier : ''}`,
-                    x: boat.x,
-                    y: boat.y - 20,
-                    color: ent.color,
-                    alpha: 1.0
+                    text: `+${pts} ${mult > 1 ? 'x' + mult : ''}`,
+                    x: boat.x, y: boat.y - 20, color: ent.color, alpha: 1.0
                 });
             } else {
-                // Hazard penalty
                 pts = -40;
-                floatingTexts.push({
-                    text: `HAZARD! ${pts}`,
-                    x: boat.x,
-                    y: boat.y - 20,
-                    color: '#f43f5e',
-                    alpha: 1.0
-                });
+                floatingTexts.push({ text: 'HAZARD! -40', x: boat.x, y: boat.y - 20, color: '#f43f5e', alpha: 1.0 });
             }
 
             levelPoints = Math.max(0, levelPoints + pts);
@@ -1177,6 +1225,7 @@
 
         function endLevel() {
             isPlaying = false;
+            sound.stopBGM();
             clearInterval(timerInterval);
 
             const isWin = levelPoints >= targetPoints;
@@ -1188,28 +1237,25 @@
             document.getElementById('result-coins').innerText = `+${Math.max(0, levelPoints)} Coins`;
 
             if (isWin) {
-                sound.playFanfare();
+                sound.playVictory();
                 gameStateData.quests.levelsWon++;
-                if (currentLevel >= gameStateData.highestLevel) {
-                    gameStateData.highestLevel = currentLevel + 1;
-                }
+                if (currentLevel >= gameStateData.highestLevel) gameStateData.highestLevel = currentLevel + 1;
                 Storage.save(gameStateData);
 
-                document.getElementById('result-title').innerText = "LEVEL COMPLETED!";
-                document.getElementById('result-title').className = "text-3xl font-black text-emerald-400 glow-text mb-1";
-                document.getElementById('result-subtitle').innerText = "You mastered this water zone!";
+                document.getElementById('result-title').innerText = "COURSE CLEAR!";
+                document.getElementById('result-title').className = "text-2xl font-retro font-black text-amber-400 glow-mario mb-1";
+                document.getElementById('result-subtitle').innerText = "You mastered this 5D ocean zone!";
                 document.getElementById('btn-next-level').classList.remove('hidden');
 
-                // Stars calculation
                 let ratio = levelPoints / targetPoints;
                 document.getElementById('star-1').className = "fa-solid fa-star text-amber-400";
                 document.getElementById('star-2').className = ratio >= 1.3 ? "fa-solid fa-star text-amber-400" : "fa-solid fa-star text-slate-700";
                 document.getElementById('star-3').className = ratio >= 1.7 ? "fa-solid fa-star text-amber-400" : "fa-solid fa-star text-slate-700";
             } else {
-                sound.playHazard();
-                document.getElementById('result-title').innerText = "QUEST FAILED";
-                document.getElementById('result-title').className = "text-3xl font-black text-rose-500 glow-text mb-1";
-                document.getElementById('result-subtitle').innerText = "Not enough fish points target!";
+                sound.playGameOver();
+                document.getElementById('result-title').innerText = "GAME OVER";
+                document.getElementById('result-title').className = "text-2xl font-retro font-black text-rose-500 mb-1";
+                document.getElementById('result-subtitle').innerText = "Not enough fish score target!";
                 document.getElementById('btn-next-level').classList.add('hidden');
 
                 document.getElementById('star-1').className = "fa-solid fa-star text-slate-700";
@@ -1218,147 +1264,167 @@
             }
         }
 
-        // --- RENDER LOOP ---
+        // --- RENDER LOOP WITH 5D VISUAL DEPTH ---
         function render() {
-            ctx.clearRect(0, 0, width, height);
+            ctx.save();
 
+            // Screen shake effect on big Titan catches
+            if (screenShakeTime > 0) {
+                screenShakeTime--;
+                ctx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8);
+            }
+
+            ctx.clearRect(0, 0, width, height);
             const biome = getCurrentBiome();
 
-            // 1. Draw Sky Gradient
-            let skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.25);
+            // 1. Multi-layer Sky Gradient (5D Depth)
+            let skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.28);
             skyGrad.addColorStop(0, biome.skyGradient[0]);
             skyGrad.addColorStop(1, biome.skyGradient[1]);
             ctx.fillStyle = skyGrad;
-            ctx.fillRect(0, 0, width, height * 0.25);
+            ctx.fillRect(0, 0, width, height * 0.28);
 
-            // Draw Sun / Moon
+            // Sun & Sunbeams (God Rays)
             ctx.fillStyle = biome.sunColor;
-            ctx.beginPath();
-            ctx.arc(width * 0.8, height * 0.08, 24, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(width * 0.8, height * 0.08, 22, 0, Math.PI * 2); ctx.fill();
 
-            // Draw Clouds
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            // Drifting Clouds
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
             clouds.forEach(c => {
                 c.x += c.speed;
                 if (c.x > width + 40) c.x = -40;
                 ctx.beginPath();
                 ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
-                ctx.arc(c.x + 15, c.y - 10, c.size * 0.8, 0, Math.PI * 2);
-                ctx.arc(c.x + 30, c.y, c.size * 0.7, 0, Math.PI * 2);
+                ctx.arc(c.x + 14, c.y - 8, c.size * 0.8, 0, Math.PI * 2);
+                ctx.arc(c.x + 28, c.y, c.size * 0.7, 0, Math.PI * 2);
                 ctx.fill();
             });
 
-            // 2. Draw Ocean Water Layer
-            let oceanGrad = ctx.createLinearGradient(0, height * 0.25, 0, height);
-            oceanGrad.addColorStop(0, biome.waterColor);
-            oceanGrad.addColorStop(1, biome.waterBottomColor);
-            ctx.fillStyle = oceanGrad;
-            ctx.fillRect(0, height * 0.25, width, height * 0.75);
+            // 2. 5D Ocean Water Gradient & Underwater Volumetric Rays
+            let waterGrad = ctx.createLinearGradient(0, height * 0.28, 0, height);
+            waterGrad.addColorStop(0, biome.waterGradient[0]);
+            waterGrad.addColorStop(1, biome.waterGradient[1]);
+            ctx.fillStyle = waterGrad;
+            ctx.fillRect(0, height * 0.28, width, height * 0.72);
 
-            // Water surface line
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(0, height * 0.25);
-            for (let x = 0; x <= width; x += 20) {
-                ctx.lineTo(x, height * 0.25 + Math.sin(Date.now() * 0.003 + x * 0.02) * 3);
-            }
-            ctx.stroke();
+            // Volumetric Underwater God-rays
+            godRays.forEach(ray => {
+                let rayGrad = ctx.createLinearGradient(ray.x, height * 0.28, ray.x + 40, height);
+                rayGrad.addColorStop(0, `rgba(255, 255, 255, ${ray.alpha})`);
+                rayGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                ctx.fillStyle = rayGrad;
+                ctx.beginPath();
+                ctx.moveTo(ray.x, height * 0.28);
+                ctx.lineTo(ray.x + ray.width, height * 0.28);
+                ctx.lineTo(ray.x + ray.width + 60, height);
+                ctx.lineTo(ray.x - 20, height);
+                ctx.closePath();
+                ctx.fill();
+            });
 
-            // Seabed Floor & Decorations (Seaweed & Starfish)
-            ctx.fillStyle = '#0284c7';
-            ctx.fillRect(0, height - 15, width, 15);
-            // Starfish
-            ctx.fillStyle = '#f43f5e';
-            ctx.beginPath(); ctx.arc(width * 0.15, height - 12, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(width * 0.85, height - 10, 10, 0, Math.PI * 2); ctx.fill();
+            // Seabed Coral & Plants
+            ctx.fillStyle = biome.seabedColor;
+            ctx.fillRect(0, height - 16, width, 16);
 
-            // 3. Render Boat & Fisherman
+            // 3. 2.5D Animated Wave Layer (Boat bobs gently on wave)
+            boat.waveOffset = Math.sin(Date.now() * 0.003) * 4;
+            let currentBoatY = boat.y + boat.waveOffset;
+
+            // Fisherman Character & Boat Hull (Positioned cleanly at 28% height, ZERO HUD OVERLAP)
             ctx.save();
-            ctx.translate(boat.x, boat.y);
+            ctx.translate(boat.x, currentBoatY);
 
-            // Fisherman Character
-            ctx.fillStyle = '#166534'; // Shirt
+            // Fisherman Hat & Face (Hat top at Y ≈ height*0.28 - 35, well below HUD)
+            ctx.fillStyle = '#15803d'; // Shirt
             ctx.fillRect(-10, -22, 16, 18);
-            ctx.fillStyle = '#fde047'; // Hat
+            ctx.fillStyle = '#facc15'; // Yellow Hat
             ctx.beginPath(); ctx.arc(-2, -26, 10, Math.PI, 0); ctx.fill();
             ctx.fillRect(-14, -26, 24, 3);
+            ctx.fillStyle = '#fde047'; // Face
+            ctx.fillRect(-6, -20, 10, 8);
+
             // Fishing Rod
-            ctx.strokeStyle = '#d97706'; ctx.lineWidth = 3;
+            ctx.strokeStyle = '#eab308'; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(18, -28); ctx.stroke();
 
             // Boat Hull
-            ctx.fillStyle = '#78350f';
+            ctx.fillStyle = '#854d0e';
             ctx.beginPath();
-            ctx.moveTo(-45, -5);
-            ctx.lineTo(45, -5);
-            ctx.lineTo(32, 20);
-            ctx.lineTo(-32, 20);
-            ctx.closePath();
-            ctx.fill();
+            ctx.moveTo(-42, -4); ctx.lineTo(42, -4); ctx.lineTo(30, 18); ctx.lineTo(-30, 18);
+            ctx.closePath(); ctx.fill();
             ctx.restore();
 
-            // 4. Draw Hook Line
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            // Wave Surface Crest
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(0, height * 0.28);
+            for (let x = 0; x <= width; x += 15) {
+                ctx.lineTo(x, height * 0.28 + Math.sin(Date.now() * 0.003 + x * 0.03) * 4);
+            }
+            ctx.stroke();
+
+            // 4. Hook Line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.moveTo(boat.x + 18, boat.y - 28);
+            ctx.moveTo(boat.x + 18, currentBoatY - 28);
             ctx.lineTo(hook.x, hook.y);
             ctx.stroke();
 
-            // Draw Metal Hook
+            // Hook Metal
             ctx.save();
             ctx.translate(hook.x, hook.y);
-            ctx.strokeStyle = '#94a3b8';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.arc(0, 4, hook.radius * 0.6, 0, Math.PI);
-            ctx.stroke();
+            ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.arc(0, 4, hook.radius * 0.6, 0, Math.PI); ctx.stroke();
             ctx.restore();
 
-            // 5. Render Entities
+            // 5. Entities & Mario Popups
             entities.forEach(ent => ent.draw());
             if (hook.caughtEntity) hook.caughtEntity.draw();
 
-            // 6. Floating Text Score Popups
+            // Mario Floating "+100" Score Text
             floatingTexts.forEach(ft => {
                 ctx.save();
                 ctx.globalAlpha = ft.alpha;
                 ctx.fillStyle = ft.color;
-                ctx.font = '900 18px Fredoka, sans-serif';
-                ctx.fillText(ft.text, ft.x - 20, ft.y);
+                ctx.font = '900 15px "Press Start 2P", monospace';
+                ctx.fillText(ft.text, ft.x - 24, ft.y);
                 ctx.restore();
             });
+
+            ctx.restore();
 
             updateGame();
             requestAnimationFrame(render);
         }
 
-        // --- UI & MODAL INTERACTIVITY ---
+        // --- UI & CONTROLLER HANDLERS ---
         function setupUI() {
-            initClouds();
+            initCloudsAndRays();
 
-            // Start Game
             document.getElementById('btn-start-game').addEventListener('click', () => {
-                sound.playClick();
+                sound.playCoin();
                 startNewLevel(gameStateData.highestLevel);
             });
 
-            // Toggle Sound
             const toggleSound = () => {
                 gameStateData.soundOn = !gameStateData.soundOn;
                 sound.enabled = gameStateData.soundOn;
                 Storage.save(gameStateData);
-                
                 const icon = document.getElementById('icon-sound-menu');
+                const hudIcon = document.getElementById('hud-sound-icon');
                 const text = document.getElementById('text-sound-menu');
                 if (gameStateData.soundOn) {
                     icon.className = "fa-solid fa-volume-high text-emerald-400";
-                    text.innerText = "Sound ON";
+                    hudIcon.className = "fa-solid fa-volume-high text-xs";
+                    text.innerText = "Audio ON";
+                    if (isPlaying) sound.startBGM();
                 } else {
                     icon.className = "fa-solid fa-volume-xmark text-rose-400";
-                    text.innerText = "Sound OFF";
+                    hudIcon.className = "fa-solid fa-volume-xmark text-xs";
+                    text.innerText = "Audio OFF";
+                    sound.stopBGM();
                 }
             };
             document.getElementById('btn-toggle-sound-menu').addEventListener('click', toggleSound);
@@ -1366,7 +1432,7 @@
 
             // Upgrades Modal
             const openUpgrades = () => {
-                sound.playClick();
+                sound.playCoin();
                 document.getElementById('shop-coins-display').innerText = gameStateData.totalCoins;
                 document.getElementById('upgrade-lvl-reel').innerText = `Lvl ${gameStateData.reelLvl}/5`;
                 document.getElementById('upgrade-lvl-hook').innerText = `Lvl ${gameStateData.hookLvl}/5`;
@@ -1378,7 +1444,7 @@
             document.getElementById('btn-close-upgrades').addEventListener('click', () => document.getElementById('modal-upgrades').classList.add('hidden'));
             document.getElementById('btn-back-upgrades').addEventListener('click', () => document.getElementById('modal-upgrades').classList.add('hidden'));
 
-            // Upgrade Shop Buttons
+            // Upgrade Buyers
             document.getElementById('btn-buy-reel').addEventListener('click', () => buyUpgrade('reelLvl', 150));
             document.getElementById('btn-buy-hook').addEventListener('click', () => buyUpgrade('hookLvl', 200));
             document.getElementById('btn-buy-time').addEventListener('click', () => buyUpgrade('timeLvl', 250));
@@ -1390,7 +1456,7 @@
                     gameStateData.totalCoins -= cost;
                     gameStateData[key]++;
                     Storage.save(gameStateData);
-                    sound.playGoldenCatch();
+                    sound.playPowerup();
                     openUpgrades();
                 } else {
                     sound.playHazard();
@@ -1399,7 +1465,7 @@
 
             // Quests Modal
             document.getElementById('btn-open-tasks').addEventListener('click', () => {
-                sound.playClick();
+                sound.playCoin();
                 renderQuests();
                 document.getElementById('modal-tasks').classList.remove('hidden');
             });
@@ -1410,28 +1476,28 @@
                 const container = document.getElementById('quests-container');
                 const q = gameStateData.quests;
                 container.innerHTML = `
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
                         <div class="flex justify-between text-xs font-bold text-white mb-1">
-                            <span>Catch 25 Total Fish</span>
-                            <span class="text-sky-400">${q.catches}/25</span>
+                            <span>Catch 20 Total Fish</span>
+                            <span class="text-amber-400 font-retro">${q.catches}/20</span>
                         </div>
                         <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                            <div class="bg-sky-400 h-full" style="width: ${Math.min(100, (q.catches/25)*100)}%"></div>
+                            <div class="bg-amber-400 h-full" style="width: ${Math.min(100, (q.catches/20)*100)}%"></div>
                         </div>
                     </div>
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
                         <div class="flex justify-between text-xs font-bold text-white mb-1">
-                            <span>Catch 5 Golden/Titan Fish</span>
-                            <span class="text-amber-400">${q.goldenCatches}/5</span>
+                            <span>Open 5 ? Mystery Crates</span>
+                            <span class="text-cyan-400 font-retro">${q.cratesOpened}/5</span>
                         </div>
                         <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                            <div class="bg-amber-400 h-full" style="width: ${Math.min(100, (q.goldenCatches/5)*100)}%"></div>
+                            <div class="bg-cyan-400 h-full" style="width: ${Math.min(100, (q.cratesOpened/5)*100)}%"></div>
                         </div>
                     </div>
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
                         <div class="flex justify-between text-xs font-bold text-white mb-1">
-                            <span>Complete 3 Level Quests</span>
-                            <span class="text-emerald-400">${q.levelsWon}/3</span>
+                            <span>Complete 3 Level Courses</span>
+                            <span class="text-emerald-400 font-retro">${q.levelsWon}/3</span>
                         </div>
                         <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
                             <div class="bg-emerald-400 h-full" style="width: ${Math.min(100, (q.levelsWon/3)*100)}%"></div>
@@ -1442,27 +1508,25 @@
 
             // Biomes Selector Modal
             document.getElementById('btn-open-biomes').addEventListener('click', () => {
-                sound.playClick();
-                if (gameStateData.highestLevel >= 3) {
-                    document.getElementById('biome-lock-2').className = "fa-solid fa-circle-check text-emerald-400 text-xl";
-                }
-                if (gameStateData.highestLevel >= 5) {
-                    document.getElementById('biome-lock-3').className = "fa-solid fa-circle-check text-emerald-400 text-xl";
-                }
+                sound.playCoin();
+                if (gameStateData.highestLevel >= 3) document.getElementById('biome-lock-2').className = "fa-solid fa-circle-check text-emerald-400 text-lg";
+                if (gameStateData.highestLevel >= 5) document.getElementById('biome-lock-3').className = "fa-solid fa-circle-check text-emerald-400 text-lg";
+                if (gameStateData.highestLevel >= 7) document.getElementById('biome-lock-4').className = "fa-solid fa-circle-check text-emerald-400 text-lg";
+                if (gameStateData.highestLevel >= 9) document.getElementById('biome-lock-5').className = "fa-solid fa-circle-check text-emerald-400 text-lg";
                 document.getElementById('modal-biomes').classList.remove('hidden');
             });
             document.getElementById('btn-close-biomes').addEventListener('click', () => document.getElementById('modal-biomes').classList.add('hidden'));
             document.getElementById('btn-back-biomes').addEventListener('click', () => document.getElementById('modal-biomes').classList.add('hidden'));
 
-            // App Legal / Play Store Info Kit Modal
+            // App Kit Modal
             document.getElementById('btn-open-app-kit').addEventListener('click', () => {
-                sound.playClick();
+                sound.playCoin();
                 document.getElementById('modal-app-kit').classList.remove('hidden');
             });
             document.getElementById('btn-close-app-kit').addEventListener('click', () => document.getElementById('modal-app-kit').classList.add('hidden'));
             document.getElementById('btn-back-app-kit').addEventListener('click', () => document.getElementById('modal-app-kit').classList.add('hidden'));
 
-            // Tab Switching inside App Kit Modal
+            // App Kit Tabs
             const tabStoreBtn = document.getElementById('tab-store-btn');
             const tabWebintoappBtn = document.getElementById('tab-webintoapp-btn');
             const tabPrivacyBtn = document.getElementById('tab-privacy-btn');
@@ -1471,44 +1535,53 @@
             const tabPrivacyContent = document.getElementById('tab-privacy-content');
 
             tabStoreBtn.addEventListener('click', () => {
-                tabStoreBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-sky-500 text-slate-950";
-                tabWebintoappBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white";
-                tabPrivacyBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white";
+                tabStoreBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg bg-amber-400 text-slate-950";
+                tabWebintoappBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white";
+                tabPrivacyBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white";
                 tabStoreContent.classList.remove('hidden');
                 tabWebintoappContent.classList.add('hidden');
                 tabPrivacyContent.classList.add('hidden');
             });
 
             tabWebintoappBtn.addEventListener('click', () => {
-                tabWebintoappBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-sky-500 text-slate-950";
-                tabStoreBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white";
-                tabPrivacyBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white";
+                tabWebintoappBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg bg-amber-400 text-slate-950";
+                tabStoreBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white";
+                tabPrivacyBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white";
                 tabWebintoappContent.classList.remove('hidden');
                 tabStoreContent.classList.add('hidden');
                 tabPrivacyContent.classList.add('hidden');
             });
 
             tabPrivacyBtn.addEventListener('click', () => {
-                tabPrivacyBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-sky-500 text-slate-950";
-                tabStoreBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white";
-                tabWebintoappBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white";
+                tabPrivacyBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg bg-amber-400 text-slate-950";
+                tabStoreBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white";
+                tabWebintoappBtn.className = "flex-1 py-1 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white";
                 tabPrivacyContent.classList.remove('hidden');
                 tabStoreContent.classList.add('hidden');
                 tabWebintoappContent.classList.add('hidden');
             });
 
-            // Next Level & Retry Buttons
+            // Results Navigation
             document.getElementById('btn-next-level').addEventListener('click', () => {
-                sound.playClick();
+                sound.playCoin();
                 startNewLevel(currentLevel + 1);
             });
             document.getElementById('btn-retry-level').addEventListener('click', () => {
-                sound.playClick();
+                sound.playCoin();
                 startNewLevel(currentLevel);
             });
 
-            // Start Render Loop
             requestAnimationFrame(render);
+        }
+
+        // Clipboard Copy Helper
+        function copyText(str) {
+            const el = document.createElement('textarea');
+            el.value = str;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
         }
 
         window.onload = setupUI;
