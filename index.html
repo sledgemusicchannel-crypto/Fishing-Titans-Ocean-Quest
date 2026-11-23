@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Retro Arcade Google Fonts -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * {
@@ -51,24 +51,40 @@
         }
         @keyframes marioPulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.06); }
+            50% { transform: scale(1.05); }
         }
         .animate-mario-bounce {
             animation: marioPulse 1.8s infinite ease-in-out;
+        }
+        .btn-dpad {
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px solid rgba(56, 189, 248, 0.5);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+            transition: all 0.1s ease;
+        }
+        .btn-dpad:active, .btn-dpad.active {
+            background: #0284c7;
+            border-color: #38bdf8;
+            transform: scale(0.92);
         }
     </style>
 </head>
 <body class="flex justify-center items-center h-screen w-screen overflow-hidden text-white bg-slate-950">
 
-    <!-- Main Game Container -->
+    <!-- MAIN GAME CONTAINER -->
     <div id="game-container" class="relative w-full h-full max-w-md md:max-w-2xl lg:max-w-4xl mx-auto flex flex-col shadow-2xl overflow-hidden bg-sky-950">
         
-        <!-- Game Canvas (Rendered with 5D Parallax, Waves & Dynamic Diver Mode) -->
+        <!-- Game Canvas -->
         <canvas id="gameCanvas" class="absolute inset-0 z-0"></canvas>
 
-        <!-- TOP HUD BAR (Pinned to Top Edge - Zero Overlap with Angler Face) -->
+        <!-- TOP HUD BAR (PINNED TO TOP EDGE - ZERO OVERLAP WITH ANGLER) -->
         <div id="hud" class="absolute top-0 left-0 w-full z-10 pt-2 px-3 pb-1 flex flex-col gap-1.5 pointer-events-none hidden">
-            <div class="flex justify-between items-center bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-sky-500/40 shadow-xl pointer-events-auto">
+            <div class="flex justify-between items-center bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-sky-500/40 shadow-xl pointer-events-auto">
                 <!-- Level Badge & Biome -->
                 <div class="flex items-center gap-1.5">
                     <span id="hud-level-badge" class="bg-amber-400 text-slate-950 font-retro text-[10px] md:text-xs px-2.5 py-1 rounded-lg font-bold shadow">LVL 1</span>
@@ -92,12 +108,12 @@
                         <i id="hud-sound-icon" class="fa-solid fa-volume-high text-xs"></i>
                     </button>
                     <button id="btn-pause" class="w-7 h-7 bg-sky-900/90 hover:bg-sky-800 text-sky-200 rounded-lg border border-sky-400/40 flex items-center justify-center transition active:scale-95 shadow">
-                        <i class="fa-solid fa-pause text-xs"></i>
+                        <i id="hud-pause-icon" class="fa-solid fa-pause text-xs"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Lower Stats Bar: Coins, Growth Rank, Mode Indicator -->
+            <!-- Lower Stats Bar: Coins, Growth Rank, Oxygen Bar, Mode Indicator -->
             <div class="flex justify-between items-center px-1 pointer-events-none">
                 <div class="flex items-center gap-2">
                     <div class="bg-slate-950/80 backdrop-blur-sm px-2.5 py-0.5 rounded-lg border border-amber-400/40 flex items-center gap-1.5 pointer-events-auto">
@@ -111,9 +127,18 @@
                 </div>
 
                 <div class="flex items-center gap-2">
+                    <!-- Oxygen Gauge (Swim Mode) -->
+                    <div id="hud-oxygen-container" class="bg-slate-950/90 border border-cyan-400/50 px-2 py-0.5 rounded-lg flex items-center gap-1.5 hidden pointer-events-auto">
+                        <i class="fa-solid fa-lungs text-cyan-400 text-xs"></i>
+                        <div class="w-16 h-2 bg-slate-800 rounded-full overflow-hidden border border-cyan-500/30">
+                            <div id="hud-oxygen-bar" class="w-full h-full bg-gradient-to-r from-cyan-400 to-sky-300 transition-all duration-200"></div>
+                        </div>
+                    </div>
+
                     <div id="combo-badge" class="bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-retro text-[9px] px-2 py-0.5 rounded-md font-bold shadow transform scale-0 transition-transform duration-200">
                         x<span id="hud-combo-count">1</span> MARIO STREAK!
                     </div>
+
                     <div id="mode-badge" class="bg-sky-500/80 border border-sky-300 text-white font-retro text-[9px] px-2 py-0.5 rounded-md font-bold shadow">
                         <i id="mode-icon" class="fa-solid fa-ship mr-1"></i> <span id="mode-text">BOAT MODE</span>
                     </div>
@@ -121,57 +146,60 @@
             </div>
         </div>
 
-        <!-- ON-SCREEN ACTION CONTROLS (Boat / Swim Mode Controls) -->
-        <div id="game-controls" class="absolute bottom-4 left-0 w-full px-4 z-10 flex justify-between items-center pointer-events-none hidden">
-            <!-- Left Side: Swim D-Pad / Move Touch Joystick -->
-            <div id="dpad-container" class="pointer-events-auto flex flex-col items-center gap-1 opacity-90 transition-opacity">
-                <div class="flex gap-1">
-                    <button id="btn-swim-up" class="w-10 h-10 bg-slate-900/80 active:bg-sky-600 border border-sky-400/50 rounded-xl text-white font-bold flex items-center justify-center text-sm shadow"><i class="fa-solid fa-arrow-up"></i></button>
-                </div>
-                <div class="flex gap-1">
-                    <button id="btn-swim-left" class="w-10 h-10 bg-slate-900/80 active:bg-sky-600 border border-sky-400/50 rounded-xl text-white font-bold flex items-center justify-center text-sm shadow"><i class="fa-solid fa-arrow-left"></i></button>
-                    <button id="btn-swim-down" class="w-10 h-10 bg-slate-900/80 active:bg-sky-600 border border-sky-400/50 rounded-xl text-white font-bold flex items-center justify-center text-sm shadow"><i class="fa-solid fa-arrow-down"></i></button>
-                    <button id="btn-swim-right" class="w-10 h-10 bg-slate-900/80 active:bg-sky-600 border border-sky-400/50 rounded-xl text-white font-bold flex items-center justify-center text-sm shadow"><i class="fa-solid fa-arrow-right"></i></button>
-                </div>
+        <!-- ON-SCREEN ACTION CONTROLS (FULL D-PAD & ACTION BUTTONS) -->
+        <div id="game-controls" class="absolute bottom-3 left-0 w-full px-3 z-10 flex justify-between items-end pointer-events-none hidden">
+            <!-- Left Side: Cross D-Pad -->
+            <div id="dpad-container" class="pointer-events-auto grid grid-cols-3 gap-1 w-32 h-32 p-1 bg-slate-950/80 backdrop-blur-md rounded-2xl border border-sky-500/40 shadow-2xl">
+                <div></div>
+                <button id="btn-pad-up" class="btn-dpad text-base"><i class="fa-solid fa-caret-up"></i></button>
+                <div></div>
+                
+                <button id="btn-pad-left" class="btn-dpad text-base"><i class="fa-solid fa-caret-left"></i></button>
+                <div class="flex items-center justify-center text-sky-400 text-xs font-bold"><i class="fa-solid fa-compass"></i></div>
+                <button id="btn-pad-right" class="btn-dpad text-base"><i class="fa-solid fa-caret-right"></i></button>
+
+                <div></div>
+                <button id="btn-pad-down" class="btn-dpad text-base"><i class="fa-solid fa-caret-down"></i></button>
+                <div></div>
             </div>
 
-            <!-- Right Side: Action Buttons (Cast / Jump Swim / Boost) -->
-            <div class="pointer-events-auto flex items-center gap-2">
-                <button id="btn-boost" class="w-12 h-12 bg-amber-500/90 hover:bg-amber-400 active:scale-95 border-2 border-yellow-200 rounded-full text-slate-950 font-retro text-[10px] flex flex-col items-center justify-center shadow-lg hidden">
+            <!-- Right Side: Action Buttons -->
+            <div class="pointer-events-auto flex items-end gap-2">
+                <button id="btn-boost" class="w-12 h-12 bg-amber-500/90 hover:bg-amber-400 active:scale-95 border-2 border-yellow-200 rounded-full text-slate-950 font-retro text-[9px] flex flex-col items-center justify-center shadow-xl">
                     <i class="fa-solid fa-bolt text-sm"></i> BOOST
                 </button>
-                <button id="btn-action-main" class="px-4 py-3 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 active:scale-95 border-2 border-yellow-200 rounded-2xl text-slate-950 font-retro text-xs font-black flex items-center gap-2 shadow-2xl">
-                    <i id="btn-action-icon" class="fa-solid fa-anchor"></i> <span id="btn-action-text">CAST HOOK</span>
-                </button>
-                <button id="btn-mode-toggle" class="w-12 h-12 bg-cyan-600/90 hover:bg-cyan-500 active:scale-95 border-2 border-cyan-200 rounded-full text-white font-bold flex flex-col items-center justify-center text-[9px] shadow-lg">
+                <button id="btn-mode-toggle" class="w-12 h-12 bg-cyan-600/90 hover:bg-cyan-500 active:scale-95 border-2 border-cyan-200 rounded-full text-white font-bold flex flex-col items-center justify-center text-[9px] shadow-xl">
                     <i id="btn-toggle-icon" class="fa-solid fa-person-swimming text-sm"></i> DIVE
+                </button>
+                <button id="btn-action-main" class="px-4 py-3 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 active:scale-95 border-2 border-yellow-200 rounded-2xl text-slate-950 font-retro text-xs font-black flex items-center gap-2 shadow-2xl">
+                    <i id="btn-action-icon" class="fa-solid fa-anchor"></i> <span id="btn-action-text">CAST</span>
                 </button>
             </div>
         </div>
 
         <!-- MAIN MENU MODAL -->
         <div id="modal-main-menu" class="absolute inset-0 z-20 flex flex-col justify-between p-5 bg-gradient-to-b from-sky-950/95 via-slate-950/98 to-slate-950 backdrop-blur-md">
-            <!-- Story Header -->
-            <div class="text-center mt-3 animate-mario-bounce">
-                <div class="inline-block bg-sky-500/20 text-cyan-300 border border-cyan-400/40 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-1.5">
-                    Apex Mobility System Presents
+            <!-- Title Header -->
+            <div class="text-center mt-2 animate-mario-bounce">
+                <div class="inline-block bg-sky-500/20 text-cyan-300 border border-cyan-400/40 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-1">
+                    Apex Mobility System
                 </div>
-                <h1 class="text-2xl md:text-3xl font-retro font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-200 to-yellow-400 glow-mario drop-shadow-lg leading-snug">
+                <h1 class="text-2xl md:text-3xl font-retro font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-200 to-yellow-400 glow-mario leading-snug">
                     FISHING TITANS
                 </h1>
                 <p class="text-[11px] font-retro text-cyan-300 tracking-wider mt-1">OCEAN QUEST: RESCUE THE PRINCESS</p>
             </div>
 
-            <!-- Quest Banner -->
+            <!-- Storyline Banner -->
             <div class="bg-gradient-to-r from-amber-500/20 via-sky-500/20 to-purple-500/20 border border-amber-500/40 p-3 rounded-2xl my-auto text-center max-w-xs mx-auto">
-                <p class="text-xs text-amber-200 font-bold mb-1"><i class="fa-solid fa-crown text-amber-400 mr-1"></i> Titan Quest Storyline</p>
+                <p class="text-xs text-amber-200 font-bold mb-1"><i class="fa-solid fa-crown text-amber-400 mr-1"></i> Rescue Princess Marina</p>
                 <p class="text-[11px] text-slate-300 leading-tight">
-                    Princess Marina has been trapped in the deep Titan Trench! Cast your line or <span class="text-cyan-300 font-bold">jump out to swim underwater</span>, level up your Growth Rank, unlock custom boats, and rescue her!
+                    Drive your boat, cast your line, or <span class="text-cyan-300 font-bold">jump out to swim underwater</span> with D-Pad controls to collect coins, open Mario '?' crates, and save the princess from the deep Titan Trench!
                 </p>
             </div>
 
             <!-- Central Buttons -->
-            <div class="flex flex-col gap-2.5 w-full max-w-xs mx-auto mb-auto">
+            <div class="flex flex-col gap-2 w-full max-w-xs mx-auto mb-auto">
                 <button id="btn-start-game" class="w-full py-3.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 text-slate-950 font-retro text-xs font-black rounded-2xl shadow-2xl border-2 border-yellow-200 transform active:scale-95 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-play"></i> START QUEST
                 </button>
@@ -191,7 +219,7 @@
             </div>
 
             <!-- Footer -->
-            <div class="flex justify-between items-center text-xs text-sky-300 border-t border-slate-800 pt-2.5">
+            <div class="flex justify-between items-center text-xs text-sky-300 border-t border-slate-800 pt-2">
                 <button id="btn-toggle-sound-menu" class="flex items-center gap-1.5 bg-slate-900 px-3 py-1 rounded-xl border border-sky-500/30 text-xs font-semibold">
                     <i id="icon-sound-menu" class="fa-solid fa-volume-high text-emerald-400"></i>
                     <span id="text-sound-menu">Audio ON</span>
@@ -223,7 +251,7 @@
                     </span>
                 </div>
 
-                <div class="flex flex-col gap-2 max-h-[52vh] overflow-y-auto pr-1">
+                <div class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1">
                     <!-- Reel Speed -->
                     <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex items-center justify-between">
                         <div class="flex items-center gap-2">
@@ -237,7 +265,7 @@
                             </div>
                         </div>
                         <button id="btn-buy-reel" class="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
-                            <span id="cost-reel">150</span> Pts
+                            <span id="cost-reel">150</span> Coins
                         </button>
                     </div>
 
@@ -254,45 +282,45 @@
                             </div>
                         </div>
                         <button id="btn-buy-hook" class="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
-                            <span id="cost-hook">200</span> Pts
+                            <span id="cost-hook">200</span> Coins
                         </button>
                     </div>
 
-                    <!-- Swim Fins -->
+                    <!-- Hydro Fins -->
                     <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm">
                                 <i class="fa-solid fa-person-swimming"></i>
                             </div>
                             <div>
-                                <h3 class="text-xs font-bold text-white">Hydro Fins</h3>
-                                <p class="text-[9px] text-slate-400">+30% faster swim speed</p>
+                                <h3 class="text-xs font-bold text-white">Hydro Swim Fins</h3>
+                                <p class="text-[9px] text-slate-400">+35% faster underwater speed</p>
                                 <span id="upgrade-lvl-fins" class="text-[9px] font-retro text-cyan-400">Lvl 1/5</span>
                             </div>
                         </div>
                         <button id="btn-buy-fins" class="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
-                            <span id="cost-fins">200</span> Pts
+                            <span id="cost-fins">200</span> Coins
                         </button>
                     </div>
 
-                    <!-- Diving Suit -->
+                    <!-- Scuba Suit -->
                     <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm">
-                                <i class="fa-solid fa-vest flex"></i>
+                                <i class="fa-solid fa-vest"></i>
                             </div>
                             <div>
                                 <h3 class="text-xs font-bold text-white">Titan Scuba Suit</h3>
-                                <p class="text-[9px] text-slate-400">Jellyfish hazard shield underwater</p>
+                                <p class="text-[9px] text-slate-400">+50% oxygen & jelly protection</p>
                                 <span id="upgrade-lvl-suit" class="text-[9px] font-retro text-purple-400">Lvl 1/5</span>
                             </div>
                         </div>
                         <button id="btn-buy-suit" class="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
-                            <span id="cost-suit">300</span> Pts
+                            <span id="cost-suit">300</span> Coins
                         </button>
                     </div>
 
-                    <!-- Unlock Boat: Coral Cruiser -->
+                    <!-- Boat Upgrade -->
                     <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm">
@@ -300,11 +328,11 @@
                             </div>
                             <div>
                                 <h3 class="text-xs font-bold text-white">Coral Cruiser Boat</h3>
-                                <p class="text-[9px] text-slate-400">+15% catch bonus across all fish</p>
+                                <p class="text-[9px] text-slate-400">+20% boat drive speed & bonus catch</p>
                             </div>
                         </div>
                         <button id="btn-buy-boat2" class="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow active:scale-95 transition">
-                            <span id="cost-boat2">500</span> Pts
+                            <span id="cost-boat2">500</span> Coins
                         </button>
                     </div>
                 </div>
@@ -321,7 +349,7 @@
                 <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 mb-3">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-trophy text-amber-400 text-lg"></i>
-                        <h2 class="text-base font-black text-white">PRINCESS RESCUE QUESTS</h2>
+                        <h2 class="text-base font-black text-white">RESCUE QUESTS</h2>
                     </div>
                     <button id="btn-close-tasks" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
                         <i class="fa-solid fa-xmark"></i>
@@ -482,7 +510,7 @@
 
                     <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl">
                         <div class="text-[9px] font-retro text-amber-400 mb-1">SHORT DESCRIPTION</div>
-                        <p class="text-slate-300 text-[11px]">Cast hooks, jump out & swim underwater, upgrade gear & rescue Princess Marina!</p>
+                        <p class="text-slate-300 text-[11px]">Drive your boat, cast hooks, dive underwater with D-Pad, upgrade gear & rescue Princess Marina!</p>
                     </div>
 
                     <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl">
@@ -490,27 +518,28 @@
                         <p class="text-slate-300 text-[10px] leading-relaxed whitespace-pre-line">
                             Welcome to Fishing Titans: Ocean Quest by Apex Mobility System!
 
-                            Join our heroic angler on an arcade adventure across 5D ocean biomes to rescue Princess Marina from the deep Titan Trench!
+                            Drive your fishing boat across surface waves or jump directly into the sea to swim underwater using responsive on-screen D-Pad controls. Catch fish, open Mario-style '?' mystery crates, and battle deep-sea hazards across 5 ocean biomes to rescue Princess Marina!
 
                             FEATURES:
-                            • Seamless Dual Gameplay Modes: Switch instantly between Boat Fishing and Jump Out & Swim underwater modes!
-                            • Mario Arcade Feel: Catch ? Mystery Crates for Fever Frenzy, Time Freezes, and Coin Showers.
-                            • Synthesized Retro Chiptune Audio: NES sound effects and BGM loop.
-                            • Angler Growth Rank & Shop: Upgrade Reel Motor, Hydro Fins, Titan Suits, and unlock Custom Boats!
-                            • Built for Mobile: Smooth touch controls and fluid 60FPS canvas visuals.
+                            • Responsive On-Screen Touch D-Pad + Full Keyboard Controls (WASD / Arrows + Space / E / F).
+                            • Dual Boat & Swim Gameplay: Drive your boat & cast hook OR jump into the water to swim in 4 directions!
+                            • Mario '?' Mystery Crates: Fever Frenzy, Time Freezes, and Coin Showers.
+                            • Synthesized Chiptune Web Audio: Retro NES sounds and BGM loop with instant sound toggle.
+                            • Angler Growth Rank & Shop: Upgrade Reel Speed, Magnet Hook, Hydro Fins, Scuba Suits, and Boats!
+                            • Mobile Optimized: Built by Apex Mobility System for Android & Web.
                         </p>
                     </div>
                 </div>
 
                 <div id="tab-webintoapp-content" class="max-h-[48vh] overflow-y-auto space-y-2 text-xs pr-1 hidden">
                     <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
-                        <h4 class="font-bold text-amber-400 mb-1 text-xs"><i class="fa-solid fa-sliders mr-1"></i> WebIntoApp Activation Setup</h4>
+                        <h4 class="font-bold text-amber-400 mb-1 text-xs"><i class="fa-solid fa-sliders mr-1"></i> WebIntoApp Setup Notes</h4>
                         <ul class="list-disc list-inside text-slate-300 text-[11px] space-y-1">
-                            <li><strong>App Name:</strong> Fishing Titans</li>
+                            <li><strong>App Name:</strong> Fishing Titans: Ocean Quest</li>
                             <li><strong>Package ID:</strong> com.apexmobilitysystem.fishingtitans</li>
-                            <li><strong>App Mode:</strong> HTML5 Web App</li>
-                            <li><strong>Orientation:</strong> Portrait Supported</li>
-                            <li><strong>Fullscreen:</strong> Enabled</li>
+                            <li><strong>App Mode:</strong> HTML5 Web App / Web Into App</li>
+                            <li><strong>Orientation:</strong> Portrait & Landscape Supported</li>
+                            <li><strong>Permissions:</strong> Internet / Storage (No special permissions needed)</li>
                         </ul>
                     </div>
                 </div>
@@ -519,11 +548,12 @@
                     <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
                         <h4 class="font-bold text-white mb-1 text-xs">Privacy Policy & Terms of Service</h4>
                         <p class="text-slate-300 text-[10px] leading-relaxed mb-2">
-                            <strong>Developer:</strong> Apex Mobility System<br>
+                            <strong>Developer / Publisher:</strong> Apex Mobility System<br>
+                            <strong>Package Name:</strong> com.apexmobilitysystem.fishingtitans<br>
                             <strong>Effective Date:</strong> November 2026
                         </p>
                         <p class="text-slate-300 text-[10px] leading-relaxed">
-                            Fishing Titans: Ocean Quest collects NO personal user data. All high scores, gear upgrades, and quest progress are stored locally on your device via standard `localStorage`.
+                            Fishing Titans: Ocean Quest does not collect or transmit personal user data. All high scores, gear upgrades, and quest milestones are stored locally on the user's device via standard `localStorage`.
                         </p>
                     </div>
                 </div>
@@ -536,9 +566,9 @@
 
     </div>
 
-    <!-- RETRO CHIPTUNE WEB AUDIO ENGINE & DUAL-MODE GAME LOOP -->
+    <!-- RETRO CHIPTUNE AUDIO & DUAL-MODE ENGINE SCRIPT -->
     <script>
-        // --- RETRO CHIPTUNE AUDIO ENGINE ---
+        // --- RETRO CHIPTUNE WEB AUDIO ENGINE ---
         class MarioSoundEngine {
             constructor() {
                 this.ctx = null;
@@ -612,8 +642,8 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(200, now);
-                osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.exponentialRampToValueAtTime(650, now + 0.15);
                 gain.gain.setValueAtTime(0.2, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
                 osc.connect(gain);
@@ -630,7 +660,7 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.setValueAtTime(320, now);
                 osc.frequency.linearRampToValueAtTime(90, now + 0.25);
                 gain.gain.setValueAtTime(0.25, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
@@ -641,7 +671,7 @@
             }
 
             playSplash() {
-                this.playNote(160, 'sawtooth', 0.15, 0.3);
+                this.playNote(150, 'sawtooth', 0.18, 0.3);
             }
 
             playVictory() {
@@ -684,7 +714,7 @@
                 const runStep = () => {
                     if (!this.bgmPlaying) return;
                     let note = bgmNotes[this.currentNoteStep % bgmNotes.length];
-                    if (note > 0 && this.enabled) this.playNote(note, 'square', 0.08, 0.05);
+                    if (note > 0 && this.enabled) this.playNote(note, 'square', 0.08, 0.04);
                     this.currentNoteStep++;
                     this.bgmTimer = setTimeout(runStep, stepTime());
                 };
@@ -711,7 +741,7 @@
         window.addEventListener('pointerdown', unlockAudio);
         window.addEventListener('keydown', unlockAudio);
 
-        // --- STORAGE ---
+        // --- STORAGE DATA ENGINE ---
         const Storage = {
             get: () => {
                 const def = {
@@ -719,19 +749,19 @@
                     quests: { catches: 0, goldenCatches: 0, cratesOpened: 0, levelsWon: 0 }
                 };
                 try {
-                    const saved = localStorage.getItem('FISHING_TITANS_5D_DATA_V2');
+                    const saved = localStorage.getItem('FISHING_TITANS_APEX_DATA_V2');
                     return saved ? { ...def, ...JSON.parse(saved) } : def;
                 } catch(e) { return def; }
             },
             save: (data) => {
-                try { localStorage.setItem('FISHING_TITANS_5D_DATA_V2', JSON.stringify(data)); } catch(e) {}
+                try { localStorage.setItem('FISHING_TITANS_APEX_DATA_V2', JSON.stringify(data)); } catch(e) {}
             }
         };
 
         let gameStateData = Storage.get();
         sound.enabled = gameStateData.soundOn;
 
-        // --- CANVAS & STATE ENGINE ---
+        // --- CANVAS & SYSTEM STATE ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         let width = 0, height = 0, dpr = 1;
@@ -748,7 +778,6 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // Game State Variables
         let currentLevel = 1;
         let levelPoints = 0;
         let targetPoints = 200;
@@ -760,29 +789,33 @@
         let screenShakeTime = 0;
         let mode = 'BOAT'; // 'BOAT' or 'SWIM'
 
-        // Boat & Diver Position
-        let boat = { x: 0, y: 0, width: 85, height: 35, waveOffset: 0 };
-        let hook = {
-            x: 0, y: 0, angle: 0, angleSpeed: 0.035, maxAngle: Math.PI / 2.4,
-            length: 28, maxLength: 0, state: 'SWING', baseSpeed: 4.5, speed: 4.5,
-            caughtEntity: null, radius: 11
+        // Key states
+        let keys = { left: false, right: false, up: false, down: false };
+
+        // Boat State
+        let boat = {
+            x: 0, y: 0, width: 84, height: 32, speed: 3.5, waveOffset: 0
         };
 
+        // Hook State
+        let hook = {
+            x: 0, y: 0, angle: 0, angleSpeed: 0.035, maxAngle: Math.PI / 2.5,
+            length: 28, maxLength: 0, state: 'SWING', baseSpeed: 4.8, speed: 4.8,
+            caughtEntity: null, radius: 12
+        };
+
+        // Diver State
         let diver = {
             x: 0, y: 0, vx: 0, vy: 0, state: 'IN_BOAT', // 'IN_BOAT', 'JUMPING', 'SWIMMING'
-            size: 16, oxygen: 100, isBoosting: false
+            size: 14, oxygen: 100, maxOxygen: 100, isBoosting: false
         };
-
-        // Key controls state for swimming
-        let keys = { up: false, down: false, left: false, right: false };
 
         let entities = [];
         let particles = [];
         let floatingTexts = [];
         let clouds = [];
-        let godRays = [];
 
-        // 5D Biome Definitions
+        // 5D Biome Specs
         const BIOMES = [
             { name: "Sunny Coral Cove", skyGradient: ['#38bdf8', '#e0f2fe'], waterGradient: ['rgba(14, 165, 233, 0.85)', 'rgba(3, 105, 161, 0.95)'], seabedColor: '#0284c7', sunColor: '#facc15' },
             { name: "Golden Sunset Lagoon", skyGradient: ['#f97316', '#ffedd5'], waterGradient: ['rgba(2, 132, 199, 0.85)', 'rgba(15, 23, 42, 0.95)'], seabedColor: '#0369a1', sunColor: '#ea580c' },
@@ -807,37 +840,40 @@
             return { rank: "RANK I - REEF ANGLER", scale: 1.0, bonus: 1.0 };
         }
 
-        // --- ENTITIES CLASS ---
+        // --- FISH & CRATE ENTITIES ---
         class FishEntity {
             constructor(type, yMin, yMax) {
-                this.type = type; // 'reef', 'angel', 'turtle', 'golden', 'titan', 'jelly', 'crate'
+                this.type = type; // 'reef', 'angel', 'turtle', 'golden', 'titan', 'jelly', 'crate', 'coin'
                 this.x = Math.random() > 0.5 ? -40 : width + 40;
                 this.direction = this.x < 0 ? 1 : -1;
                 this.y = yMin + Math.random() * (yMax - yMin);
 
                 if (type === 'reef') {
-                    this.width = 32; this.height = 20; this.speed = (1.5 + Math.random() * 1.5) * this.direction;
+                    this.width = 30; this.height = 18; this.speed = (1.5 + Math.random() * 1.5) * this.direction;
                     this.points = 30; this.weight = 1.0; this.color = '#f97316';
                 } else if (type === 'angel') {
-                    this.width = 40; this.height = 34; this.speed = (1.2 + Math.random() * 1.2) * this.direction;
+                    this.width = 38; this.height = 32; this.speed = (1.2 + Math.random() * 1.2) * this.direction;
                     this.points = 60; this.weight = 1.1; this.color = '#38bdf8';
                 } else if (type === 'turtle') {
-                    this.width = 48; this.height = 30; this.speed = (0.8 + Math.random() * 0.8) * this.direction;
+                    this.width = 46; this.height = 28; this.speed = (0.8 + Math.random() * 0.8) * this.direction;
                     this.points = 100; this.weight = 2.0; this.color = '#22c55e';
                 } else if (type === 'golden') {
-                    this.width = 36; this.height = 24; this.speed = (2.6 + Math.random() * 2) * this.direction;
+                    this.width = 34; this.height = 22; this.speed = (2.5 + Math.random() * 1.8) * this.direction;
                     this.points = 180; this.weight = 1.0; this.color = '#facc15';
                 } else if (type === 'titan') {
-                    this.width = 68; this.height = 46; this.speed = (1.0 + Math.random() * 1.2) * this.direction;
-                    this.points = 300; this.weight = 3.2; this.color = '#a855f7';
+                    this.width = 64; this.height = 42; this.speed = (1.0 + Math.random() * 1.2) * this.direction;
+                    this.points = 300; this.weight = 3.0; this.color = '#a855f7';
                 } else if (type === 'jelly') {
-                    this.width = 34; this.height = 38; this.speed = 0;
+                    this.width = 32; this.height = 36; this.speed = 0;
                     this.vy = (0.6 + Math.random() * 0.8) * (Math.random() > 0.5 ? 1 : -1);
                     this.points = -50; this.weight = 1.5; this.color = '#f43f5e';
                     this.yMinLimit = yMin; this.yMaxLimit = yMax;
                 } else if (type === 'crate') {
-                    this.width = 30; this.height = 30; this.speed = (0.8 + Math.random() * 0.5) * this.direction;
+                    this.width = 28; this.height = 28; this.speed = (0.7 + Math.random() * 0.5) * this.direction;
                     this.points = 150; this.weight = 1.2; this.color = '#eab308';
+                } else if (type === 'coin') {
+                    this.width = 18; this.height = 18; this.speed = (1.0 + Math.random() * 1.0) * this.direction;
+                    this.points = 40; this.weight = 0.5; this.color = '#facc15';
                 }
             }
 
@@ -853,47 +889,51 @@
             draw() {
                 ctx.save();
                 ctx.translate(this.x, this.y);
-                if (this.direction === -1 && this.type !== 'jelly' && this.type !== 'crate') ctx.scale(-1, 1);
+                if (this.direction === -1 && this.type !== 'jelly' && this.type !== 'crate' && this.type !== 'coin') ctx.scale(-1, 1);
 
                 if (this.type === 'crate') {
                     ctx.shadowColor = '#eab308'; ctx.shadowBlur = 10;
-                    ctx.fillStyle = '#eab308'; ctx.fillRect(-15, -15, 30, 30);
-                    ctx.strokeStyle = '#854d0e'; ctx.lineWidth = 3; ctx.strokeRect(-15, -15, 30, 30);
-                    ctx.fillStyle = '#ffffff'; ctx.font = '900 16px "Press Start 2P", monospace';
+                    ctx.fillStyle = '#eab308'; ctx.fillRect(-14, -14, 28, 28);
+                    ctx.strokeStyle = '#854d0e'; ctx.lineWidth = 3; ctx.strokeRect(-14, -14, 28, 28);
+                    ctx.fillStyle = '#ffffff'; ctx.font = '900 14px "Press Start 2P", monospace';
                     ctx.fillText('?', -5, 5);
+                } else if (this.type === 'coin') {
+                    ctx.shadowColor = '#facc15'; ctx.shadowBlur = 8;
+                    ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#ca8a04'; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.fillStyle = '#854d0e'; ctx.font = '900 10px "Press Start 2P", monospace';
+                    ctx.fillText('$', -3, 3);
                 } else if (this.type === 'reef') {
-                    ctx.fillStyle = this.color; ctx.beginPath(); ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-20, -7); ctx.lineTo(-20, 7); ctx.closePath(); ctx.fill();
-                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(8, -3, 3, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = this.color; ctx.beginPath(); ctx.ellipse(0, 0, 15, 9, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(-18, -6); ctx.lineTo(-18, 6); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(7, -3, 2.5, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'angel') {
-                    ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.ellipse(0, 0, 18, 20, 0, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-6, -16); ctx.lineTo(-6, 16); ctx.stroke();
+                    ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.ellipse(0, 0, 17, 18, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-5, -14); ctx.lineTo(-5, 14); ctx.stroke();
                 } else if (this.type === 'turtle') {
-                    ctx.fillStyle = '#15803d'; ctx.beginPath(); ctx.ellipse(0, 0, 20, 14, 0, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(18, 0, 6, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#15803d'; ctx.beginPath(); ctx.ellipse(0, 0, 18, 12, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(16, 0, 5, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'golden') {
                     ctx.shadowColor = '#facc15'; ctx.shadowBlur = 12;
-                    ctx.fillStyle = '#eab308'; ctx.beginPath(); ctx.ellipse(0, 0, 18, 12, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#eab308'; ctx.beginPath(); ctx.ellipse(0, 0, 17, 11, 0, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'titan') {
                     ctx.shadowColor = '#c084fc'; ctx.shadowBlur = 16;
-                    ctx.fillStyle = '#6b21a8'; ctx.beginPath(); ctx.ellipse(0, 0, 32, 22, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#6b21a8'; ctx.beginPath(); ctx.ellipse(0, 0, 30, 20, 0, 0, Math.PI * 2); ctx.fill();
                 } else if (this.type === 'jelly') {
-                    ctx.fillStyle = 'rgba(244, 63, 94, 0.85)'; ctx.beginPath(); ctx.arc(0, -6, 16, Math.PI, 0); ctx.fill();
+                    ctx.fillStyle = 'rgba(244, 63, 94, 0.85)'; ctx.beginPath(); ctx.arc(0, -5, 15, Math.PI, 0); ctx.fill();
                     ctx.strokeStyle = '#fda4af'; ctx.lineWidth = 2;
-                    for (let i = -10; i <= 10; i += 5) {
-                        ctx.beginPath(); ctx.moveTo(i, -6);
-                        ctx.quadraticCurveTo(i + Math.sin(Date.now() * 0.01 + i) * 5, 10, i, 20); ctx.stroke();
+                    for (let i = -9; i <= 9; i += 4.5) {
+                        ctx.beginPath(); ctx.moveTo(i, -5);
+                        ctx.quadraticCurveTo(i + Math.sin(Date.now() * 0.01 + i) * 4, 8, i, 18); ctx.stroke();
                     }
                 }
                 ctx.restore();
             }
         }
 
-        function initCloudsAndRays() {
+        function initClouds() {
             clouds = [];
-            for (let i = 0; i < 4; i++) clouds.push({ x: Math.random() * width, y: 10 + Math.random() * 25, size: 20 + Math.random() * 18, speed: 0.2 + Math.random() * 0.3 });
-            godRays = [];
-            for (let i = 0; i < 5; i++) godRays.push({ x: (width / 5) * i + Math.random() * 30, width: 30 + Math.random() * 40, alpha: 0.08 + Math.random() * 0.1 });
+            for (let i = 0; i < 4; i++) clouds.push({ x: Math.random() * width, y: 8 + Math.random() * 22, size: 18 + Math.random() * 16, speed: 0.2 + Math.random() * 0.25 });
         }
 
         function startNewLevel(lvl) {
@@ -907,6 +947,8 @@
 
             boat.x = width / 2;
             boat.y = height * 0.28;
+            boat.speed = 3.5 + (gameStateData.boatLvl * 0.7);
+
             hook.x = boat.x;
             hook.y = boat.y + 25;
             hook.angle = 0;
@@ -914,11 +956,15 @@
             hook.maxLength = height * 0.90;
             hook.state = 'SWING';
             hook.caughtEntity = null;
+            hook.radius = 12 + (gameStateData.hookLvl * 3);
 
             diver.state = 'IN_BOAT';
             diver.x = boat.x;
             diver.y = boat.y - 10;
             diver.vx = 0; diver.vy = 0;
+            diver.maxOxygen = 100 + (gameStateData.suitLvl * 25);
+            diver.oxygen = diver.maxOxygen;
+
             mode = 'BOAT';
 
             entities = [];
@@ -964,10 +1010,11 @@
             const rand = Math.random();
             let type = 'reef';
 
-            if (rand < 0.15) type = 'crate';
-            else if (rand < 0.35) type = 'jelly';
-            else if (rand < 0.60) type = currentLevel >= 4 ? 'titan' : 'golden';
-            else if (rand < 0.80) type = 'angel';
+            if (rand < 0.12) type = 'coin';
+            else if (rand < 0.24) type = 'crate';
+            else if (rand < 0.42) type = 'jelly';
+            else if (rand < 0.65) type = currentLevel >= 4 ? 'titan' : 'golden';
+            else if (rand < 0.82) type = 'angel';
             else type = 'turtle';
 
             entities.push(new FishEntity(type, yMin, yMax));
@@ -979,41 +1026,37 @@
             const btnText = document.getElementById('btn-action-text');
             const btnIcon = document.getElementById('btn-action-icon');
             const btnToggleIcon = document.getElementById('btn-toggle-icon');
-            const dpad = document.getElementById('dpad-container');
-            const btnBoost = document.getElementById('btn-boost');
+            const oxygenContainer = document.getElementById('hud-oxygen-container');
 
             if (mode === 'BOAT') {
                 modeText.innerText = "BOAT MODE";
                 modeIcon.className = "fa-solid fa-ship mr-1";
-                btnText.innerText = "CAST HOOK";
+                btnText.innerText = "CAST";
                 btnIcon.className = "fa-solid fa-anchor";
                 btnToggleIcon.className = "fa-solid fa-person-swimming text-sm";
-                dpad.classList.add('opacity-30');
-                btnBoost.classList.add('hidden');
+                oxygenContainer.classList.add('hidden');
             } else {
                 modeText.innerText = "SWIM MODE";
                 modeIcon.className = "fa-solid fa-person-swimming mr-1";
-                btnText.innerText = "SWIM GRAB";
+                btnText.innerText = "GRAB";
                 btnIcon.className = "fa-solid fa-hand text-sm";
                 btnToggleIcon.className = "fa-solid fa-ship text-sm";
-                dpad.classList.remove('opacity-30');
-                btnBoost.classList.remove('hidden');
+                oxygenContainer.classList.remove('hidden');
             }
         }
 
         function toggleMode() {
             if (!isPlaying || isPaused) return;
             if (mode === 'BOAT') {
-                // Jump out of boat into water
                 mode = 'SWIM';
                 diver.state = 'JUMPING';
                 diver.x = boat.x;
                 diver.y = boat.y - 12;
-                diver.vx = 2.5;
-                diver.vy = -5.0; // Jump arc
+                diver.vx = keys.right ? 3.5 : (keys.left ? -3.5 : 1.5);
+                diver.vy = -5.0; // Jump arc upwards out of boat
                 sound.playSplash();
             } else {
-                // Board boat if close, or pull back automatically
+                // Board boat if near or force return to boat
                 mode = 'BOAT';
                 diver.state = 'IN_BOAT';
                 diver.x = boat.x;
@@ -1030,41 +1073,61 @@
                     hook.state = 'CAST';
                     sound.playCast();
                 } else if (hook.state === 'REEL') {
-                    hook.speed += 1.5;
+                    hook.speed += 1.8;
                 }
             } else {
-                // Swim grab up close
+                // Swim boost & grab
                 diver.isBoosting = true;
-                setTimeout(() => diver.isBoosting = false, 300);
+                sound.playCast();
+                setTimeout(() => diver.isBoosting = false, 350);
             }
         }
 
-        // --- KEY & TOUCH CONTROLS ---
+        // --- KEYBOARD & ON-SCREEN D-PAD CONTROLS ---
         window.addEventListener('keydown', (e) => {
-            if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.up = true;
-            if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.down = true;
-            if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = true;
-            if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = true;
-            if (e.code === 'Space') triggerMainAction();
-            if (e.code === 'KeyE') toggleMode();
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = true;
+            if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = true;
+            if (e.code === 'Space') { e.preventDefault(); triggerMainAction(); }
+            if (e.code === 'KeyE' || e.code === 'ShiftLeft') toggleMode();
+            if (e.code === 'KeyF' || e.code === 'KeyB') {
+                diver.isBoosting = true;
+                setTimeout(() => diver.isBoosting = false, 400);
+            }
         });
 
         window.addEventListener('keyup', (e) => {
-            if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.up = false;
-            if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.down = false;
-            if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = false;
-            if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = false;
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = false;
+            if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = false;
         });
 
-        // D-Pad Touch Listeners
-        const bindDPad = (id, key) => {
+        // Touch & Mouse D-Pad Listener Bindings
+        function setupDPadButton(id, keyName) {
             const el = document.getElementById(id);
-            el.addEventListener('pointerdown', (e) => { e.preventDefault(); keys[key] = true; });
-            el.addEventListener('pointerup', () => keys[key] = false);
-            el.addEventListener('pointerleave', () => keys[key] = false);
-        };
-        bindDPad('btn-swim-up', 'up'); bindDPad('btn-swim-down', 'down');
-        bindDPad('btn-swim-left', 'left'); bindDPad('btn-swim-right', 'right');
+            const startHandler = (e) => {
+                e.preventDefault();
+                keys[keyName] = true;
+                el.classList.add('active');
+            };
+            const endHandler = (e) => {
+                if (e) e.preventDefault();
+                keys[keyName] = false;
+                el.classList.remove('active');
+            };
+
+            el.addEventListener('pointerdown', startHandler);
+            el.addEventListener('pointerup', endHandler);
+            el.addEventListener('pointercancel', endHandler);
+            el.addEventListener('pointerleave', endHandler);
+        }
+
+        setupDPadButton('btn-pad-left', 'left');
+        setupDPadButton('btn-pad-right', 'right');
+        setupDPadButton('btn-pad-up', 'up');
+        setupDPadButton('btn-pad-down', 'down');
 
         document.getElementById('btn-action-main').addEventListener('click', triggerMainAction);
         document.getElementById('btn-mode-toggle').addEventListener('click', toggleMode);
@@ -1073,9 +1136,24 @@
             setTimeout(() => diver.isBoosting = false, 400);
         });
 
-        // --- UPDATE LOOP ---
+        document.getElementById('btn-pause').addEventListener('click', () => {
+            if (!isPlaying) return;
+            isPaused = !isPaused;
+            document.getElementById('hud-pause-icon').className = isPaused ? "fa-solid fa-play text-xs" : "fa-solid fa-pause text-xs";
+            if (isPaused) sound.stopBGM();
+            else sound.startBGM();
+        });
+
+        // --- GAME LOGIC UPDATE LOOP ---
         function updateGame() {
             if (!isPlaying || isPaused) return;
+
+            // BOAT MOVEMENT (Left / Right D-Pad or Arrow Keys)
+            if (mode === 'BOAT' || diver.state === 'IN_BOAT') {
+                if (keys.left) boat.x -= boat.speed;
+                if (keys.right) boat.x += boat.speed;
+                boat.x = Math.max(45, Math.min(width - 45, boat.x));
+            }
 
             // BOAT HOOK MECHANICS
             if (mode === 'BOAT') {
@@ -1099,12 +1177,12 @@
                             entities.splice(i, 1);
                             hook.state = 'REEL';
                             if (ent.type === 'jelly') sound.playHazard();
-                            else if (ent.type === 'crate') sound.playPowerup();
+                            else if (ent.type === 'crate' || ent.type === 'coin') sound.playPowerup();
                             break;
                         }
                     }
                 } else if (hook.state === 'REEL') {
-                    let reelMotor = 3.5 + (gameStateData.reelLvl * 0.9);
+                    let reelMotor = 3.6 + (gameStateData.reelLvl * 0.9);
                     let drag = hook.caughtEntity ? hook.caughtEntity.weight : 1.0;
                     hook.length -= (reelMotor / drag);
                     hook.x = boat.x + Math.sin(hook.angle) * hook.length;
@@ -1126,7 +1204,7 @@
                 }
             }
 
-            // DIVER SWIM MECHANICS (Jump out & swim)
+            // DIVER SWIM MECHANICS (4-Directional D-Pad Swim)
             if (mode === 'SWIM') {
                 if (diver.state === 'JUMPING') {
                     diver.x += diver.vx;
@@ -1137,16 +1215,17 @@
                         sound.playSplash();
                     }
                 } else if (diver.state === 'SWIMMING') {
-                    let swimSpeed = 2.8 + (gameStateData.finsLvl * 0.6);
+                    let swimSpeed = 3.0 + (gameStateData.finsLvl * 0.7);
                     if (diver.isBoosting) swimSpeed *= 1.8;
 
+                    // 4-Directional Movement from Keys & On-Screen D-Pad
                     if (keys.left) diver.vx = -swimSpeed;
                     else if (keys.right) diver.vx = swimSpeed;
-                    else diver.vx *= 0.85;
+                    else diver.vx *= 0.82;
 
                     if (keys.up) diver.vy = -swimSpeed;
                     else if (keys.down) diver.vy = swimSpeed;
-                    else diver.vy *= 0.85;
+                    else diver.vy *= 0.82;
 
                     diver.x += diver.vx;
                     diver.y += diver.vy;
@@ -1155,20 +1234,33 @@
                     diver.x = Math.max(15, Math.min(width - 15, diver.x));
                     diver.y = Math.max(height * 0.28, Math.min(height - 25, diver.y));
 
-                    // Near boat surface check -> option to jump back in
-                    if (diver.y <= height * 0.30 && Math.abs(diver.x - boat.x) < 30) {
-                        mode = 'BOAT';
-                        diver.state = 'IN_BOAT';
-                        updateModeUI();
+                    // Oxygen Depletion / Recovery
+                    if (diver.y > height * 0.32) {
+                        diver.oxygen = Math.max(0, diver.oxygen - 0.08);
+                        if (diver.oxygen <= 0) {
+                            // Out of air -> push to surface
+                            diver.vy = -4.0;
+                            sound.playHazard();
+                        }
+                    } else {
+                        // Surface / Air Recovery
+                        diver.oxygen = Math.min(diver.maxOxygen, diver.oxygen + 1.2);
+                        // Near boat check -> auto-board
+                        if (Math.abs(diver.x - boat.x) < 35) {
+                            mode = 'BOAT';
+                            diver.state = 'IN_BOAT';
+                            updateModeUI();
+                        }
                     }
+                    const oxyPct = (diver.oxygen / diver.maxOxygen) * 100;
+                    document.getElementById('hud-oxygen-bar').style.width = `${oxyPct}%`;
 
-                    // Direct Swim Catch Collision
+                    // Direct Swim Catch & Collect Collision
                     for (let i = entities.length - 1; i >= 0; i--) {
                         let ent = entities[i];
                         let dist = Math.hypot(diver.x - ent.x, diver.y - ent.y);
                         if (dist < diver.size + ent.width / 2) {
                             if (ent.type === 'jelly' && gameStateData.suitLvl > 1) {
-                                // Scuba suit protects against jellyfish
                                 floatingTexts.push({ text: 'SUIT SHIELD!', x: diver.x, y: diver.y - 15, color: '#c084fc', alpha: 1.0 });
                             } else {
                                 processCatch(ent);
@@ -1208,6 +1300,10 @@
                 pts = 150;
                 sound.playPowerup();
                 floatingTexts.push({ text: '? MYSTERY CRATE!', x: mode === 'BOAT' ? boat.x : diver.x, y: mode === 'BOAT' ? boat.y - 20 : diver.y - 15, color: '#facc15', alpha: 1.0 });
+            } else if (ent.type === 'coin') {
+                pts = 50;
+                sound.playCoin();
+                floatingTexts.push({ text: '+50 COINS', x: mode === 'BOAT' ? boat.x : diver.x, y: mode === 'BOAT' ? boat.y - 20 : diver.y - 15, color: '#facc15', alpha: 1.0 });
             } else if (pts > 0) {
                 comboCount++;
                 let mult = Math.min(comboCount, 5);
@@ -1233,6 +1329,13 @@
             document.getElementById('hud-level-points').innerText = levelPoints;
             document.getElementById('hud-total-points').innerText = gameStateData.totalCoins;
             document.getElementById('hud-growth-rank').innerText = getGrowthRank().rank.split(' - ')[0];
+
+            if (comboCount > 1) {
+                const badge = document.getElementById('combo-badge');
+                document.getElementById('hud-combo-count').innerText = comboCount;
+                badge.classList.remove('scale-0');
+                setTimeout(() => badge.classList.add('scale-0'), 1500);
+            }
         }
 
         function endLevel() {
@@ -1262,7 +1365,7 @@
             }
         }
 
-        // --- RENDER LOOP ---
+        // --- CANVAS RENDER LOOP ---
         function render() {
             ctx.save();
             if (screenShakeTime > 0) {
@@ -1273,13 +1376,12 @@
             ctx.clearRect(0, 0, width, height);
             const biome = getCurrentBiome();
 
-            // Sky
+            // 1. Sky Gradient & Sun
             let skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.28);
             skyGrad.addColorStop(0, biome.skyGradient[0]);
             skyGrad.addColorStop(1, biome.skyGradient[1]);
             ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, width, height * 0.28);
 
-            // Sun & Clouds
             ctx.fillStyle = biome.sunColor;
             ctx.beginPath(); ctx.arc(width * 0.8, height * 0.08, 22, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
@@ -1288,7 +1390,7 @@
                 ctx.beginPath(); ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2); ctx.fill();
             });
 
-            // Water
+            // 2. Ocean Water Gradient
             let waterGrad = ctx.createLinearGradient(0, height * 0.28, 0, height);
             waterGrad.addColorStop(0, biome.waterGradient[0]);
             waterGrad.addColorStop(1, biome.waterGradient[1]);
@@ -1297,7 +1399,7 @@
             // Seabed
             ctx.fillStyle = biome.seabedColor; ctx.fillRect(0, height - 16, width, 16);
 
-            // Boat & Angler (Boat Mode)
+            // 3. Render Boat & Fisherman
             boat.waveOffset = Math.sin(Date.now() * 0.003) * 4;
             let currentBoatY = boat.y + boat.waveOffset;
 
@@ -1306,10 +1408,10 @@
 
             // Fisherman (In Boat)
             if (diver.state === 'IN_BOAT') {
-                ctx.fillStyle = '#15803d'; ctx.fillRect(-10, -22, 16, 18);
-                ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(-2, -26, 10, Math.PI, 0); ctx.fill();
-                ctx.fillStyle = '#fde047'; ctx.fillRect(-6, -20, 10, 8);
-                ctx.strokeStyle = '#eab308'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(18, -28); ctx.stroke();
+                ctx.fillStyle = '#15803d'; ctx.fillRect(-10, -22, 16, 18); // Shirt
+                ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(-2, -26, 10, Math.PI, 0); ctx.fill(); // Hat
+                ctx.fillStyle = '#fde047'; ctx.fillRect(-6, -20, 10, 8); // Head
+                ctx.strokeStyle = '#eab308'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(18, -28); ctx.stroke(); // Fishing Rod
             }
 
             // Boat Hull
@@ -1317,19 +1419,19 @@
             ctx.beginPath(); ctx.moveTo(-42, -4); ctx.lineTo(42, -4); ctx.lineTo(30, 18); ctx.lineTo(-30, 18); ctx.closePath(); ctx.fill();
             ctx.restore();
 
-            // Diver Swimming Character
+            // 4. Render Diver Swimming Character
             if (diver.state === 'JUMPING' || diver.state === 'SWIMMING') {
                 ctx.save();
                 ctx.translate(diver.x, diver.y);
                 ctx.fillStyle = '#0ea5e9'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(4, -2, 4, 0, Math.PI * 2); ctx.fill(); // Mask
+                ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(4, -2, 4, 0, Math.PI * 2); ctx.fill(); // Scuba Mask
                 if (gameStateData.finsLvl > 1) {
-                    ctx.fillStyle = '#facc15'; ctx.fillRect(-14, -4, 8, 8); // Fins
+                    ctx.fillStyle = '#facc15'; ctx.fillRect(-14, -4, 8, 8); // Hydro Fins
                 }
                 ctx.restore();
             }
 
-            // Hook Line (Boat Mode)
+            // 5. Hook & Line (Boat Mode)
             if (mode === 'BOAT') {
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.moveTo(boat.x + 18, currentBoatY - 28); ctx.lineTo(hook.x, hook.y); ctx.stroke();
@@ -1337,13 +1439,13 @@
                 ctx.beginPath(); ctx.arc(hook.x, hook.y + 4, hook.radius * 0.6, 0, Math.PI); ctx.stroke();
             }
 
-            // Entities & Floating Text
+            // 6. Fish Entities & Floating Scores
             entities.forEach(ent => ent.draw());
             if (hook.caughtEntity) hook.caughtEntity.draw();
 
             floatingTexts.forEach(ft => {
                 ctx.save(); ctx.globalAlpha = ft.alpha; ctx.fillStyle = ft.color;
-                ctx.font = '900 14px "Press Start 2P", monospace';
+                ctx.font = '900 13px "Press Start 2P", monospace';
                 ctx.fillText(ft.text, ft.x - 20, ft.y); ctx.restore();
             });
 
@@ -1352,9 +1454,9 @@
             requestAnimationFrame(render);
         }
 
-        // --- SETUP MODALS & UI ---
+        // --- SETUP MODALS & UI HANDLERS ---
         function setupUI() {
-            initCloudsAndRays();
+            initClouds();
 
             document.getElementById('btn-start-game').addEventListener('click', () => {
                 sound.playCoin(); startNewLevel(gameStateData.highestLevel);
@@ -1371,7 +1473,7 @@
             document.getElementById('btn-toggle-sound-menu').addEventListener('click', toggleSound);
             document.getElementById('btn-sound-hud').addEventListener('click', toggleSound);
 
-            // Upgrades Shop Modal
+            // Upgrades Shop
             document.getElementById('btn-open-upgrades').addEventListener('click', () => {
                 sound.playCoin();
                 document.getElementById('shop-coins-display').innerText = gameStateData.totalCoins;
@@ -1408,21 +1510,21 @@
             function renderQuests() {
                 const q = gameStateData.quests;
                 document.getElementById('quests-container').innerHTML = `
-                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl text-xs">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs">
                         <div class="flex justify-between font-bold text-white mb-1">
                             <span>Catch 20 Total Fish</span>
                             <span class="text-amber-400 font-retro">${q.catches}/20</span>
                         </div>
                     </div>
-                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl text-xs">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs">
                         <div class="flex justify-between font-bold text-white mb-1">
                             <span>Open 5 ? Mystery Crates</span>
                             <span class="text-cyan-400 font-retro">${q.cratesOpened}/5</span>
                         </div>
                     </div>
-                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl text-xs">
+                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs">
                         <div class="flex justify-between font-bold text-white mb-1">
-                            <span>Rescue Princess Marina (Stage Clear 3)</span>
+                            <span>Rescue Princess Marina (Clear 3 Stages)</span>
                             <span class="text-emerald-400 font-retro">${q.levelsWon}/3</span>
                         </div>
                     </div>
@@ -1467,7 +1569,7 @@
                 tabPrivacyBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg bg-amber-400 text-slate-950";
                 tabStoreBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
                 tabWebintoappBtn.className = "flex-1 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-white";
-                tabPrivacyContent.classList.remove('hidden'); tabStoreContent.classList.add('hidden'); tabWebintoappContent.classList.add('hidden');
+                tabPrivacyContent.classList.remove('hidden'); tabStoreContent.classList.add('hidden'); tabPrivacyContent.classList.add('hidden');
             });
 
             // Results Navigation
